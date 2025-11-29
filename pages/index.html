@@ -232,7 +232,7 @@
       function renderQuotaCard(title, detail) {
         const { entitlement, remaining, percent_remaining, unlimited } = detail;
         const percentUsed = unlimited ? 0 : 100 - percent_remaining;
-        const used = unlimited ? "N/A" : entitlement - remaining;
+        const used = unlimited ? "无限" : entitlement - remaining;
         let color = "from-cyan-400 to-blue-500";
         if (!unlimited && percentUsed > 75) color = "from-amber-400 to-orange-500";
         if (!unlimited && percentUsed > 90) color = "from-rose-500 to-red-600";
@@ -246,16 +246,31 @@
               <div style="width:${unlimited ? 100 : percentUsed}%;" class="bg-gradient-to-r ${color}"></div>
             </div>
             <div class="flex justify-between text-xs text-slate-400 mono">
-              <span>${used.toLocaleString()} / ${unlimited ? "N/A" : entitlement.toLocaleString()}</span>
-              <span>${unlimited ? "N/A" : remaining.toLocaleString()} 剩余</span>
+              <span>${used === "无限" ? "无限" : Number(used).toLocaleString()} / ${unlimited ? "无限" : entitlement.toLocaleString()}</span>
+              <span>${unlimited ? "无限" : remaining.toLocaleString()} 剩余</span>
             </div>
           </div>
         `;
       }
 
+      function formatMaybeDate(value) {
+        if (typeof value !== "string") return null;
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return null;
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
       function formatObject(obj) {
         if (obj === null || typeof obj !== "object") {
-          return `<span class="text-cyan-200">${JSON.stringify(obj)}</span>`;
+          if (typeof obj === "string") {
+            const formatted = formatMaybeDate(obj);
+            return `<span class="text-cyan-200">${formatted ?? obj}</span>`;
+          }
+          if (typeof obj === "number") {
+            return `<span class="text-cyan-200">${obj}</span>`;
+          }
+          return `<span class="text-cyan-200">${String(obj)}</span>`;
         }
         const labelMap = {
           account: "账号",
@@ -294,7 +309,14 @@
             } else if (typeof v === "boolean") {
               val = `<span class="${v ? "text-green-300" : "text-red-300"} font-semibold">${v ? "是" : "否"}</span>`;
             } else {
-              val = `<span class="text-blue-200">${JSON.stringify(v)}</span>`;
+              if (typeof v === "number" && k.includes("percent")) {
+                val = `<span class="text-blue-200">${v.toFixed(1)}%</span>`;
+              } else if (typeof v === "string") {
+                const formatted = formatMaybeDate(v);
+                val = `<span class="text-blue-200">${formatted ?? v}</span>`;
+              } else {
+                val = `<span class="text-blue-200">${String(v)}</span>`;
+              }
             }
             return `
               <div class="flex flex-col gap-1 border border-white/5 rounded-lg p-2">
