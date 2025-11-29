@@ -365,14 +365,31 @@
 
       async function fetchAccounts() {
         try {
-          const res = await fetch(TOKEN_URL);
-          if (!res.ok) return;
-          const json = await res.json();
-          if (Array.isArray(json.tokens)) {
-            state.accounts = json.tokens.map((t) => ({ id: t.id || "unknown" }));
-            if (!state.accountId && state.accounts.length > 0) {
-              state.accountId = state.accounts[0].id;
+          const res = await fetch(ACCOUNT_URL);
+          if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.accounts)) {
+              state.accounts = json.accounts.map((a) => ({
+                id: a.id || "unknown",
+                accountType: a.accountType,
+              }));
             }
+          }
+          // fallback to token endpoint for兼容
+          if (!state.accounts.length) {
+            const tRes = await fetch(TOKEN_URL);
+            if (tRes.ok) {
+              const json = await tRes.json();
+              if (Array.isArray(json.tokens)) {
+                state.accounts = json.tokens.map((t) => ({
+                  id: t.id || "unknown",
+                  accountType: t.accountType,
+                }));
+              }
+            }
+          }
+          if (!state.accountId && state.accounts.length > 0) {
+            state.accountId = state.accounts[0].id;
           }
         } catch (e) {
           console.warn("账户列表获取失败:", e);

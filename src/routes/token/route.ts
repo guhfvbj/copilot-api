@@ -9,6 +9,7 @@ tokenRoute.get("/", (c) => {
     return c.json({
       tokens: state.accounts.map((account) => ({
         id: account.id,
+        accountType: account.accountType,
         token: account.copilotToken,
       })),
     })

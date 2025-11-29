@@ -7,6 +7,20 @@ import { state } from "~/lib/state"
 
 export const accountRoutes = new Hono()
 
+accountRoutes.get("/", (c) => {
+  try {
+    return c.json({
+      accounts: state.accounts.map((a) => ({
+        id: a.id,
+        accountType: a.accountType,
+        hasToken: Boolean(a.copilotToken),
+      })),
+    })
+  } catch (error) {
+    return c.json({ error: "Failed to list accounts" }, 500)
+  }
+})
+
 accountRoutes.post("/", async (c) => {
   try {
     const body = await c.req.json<{
