@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Copilot 用量总览</title>
+    <title>Copilot 用量面板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
@@ -70,8 +70,10 @@
             <i class="lucide lucide-gauge h-6 w-6 text-cyan-300"></i>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-white">Copilot 用量看板</h1>
-            <p class="text-sm text-slate-300">固定直连：<span class="mono text-cyan-200">http://209.38.152.153:4141</span></p>
+            <h1 class="text-2xl font-bold text-white">Copilot 用量面板</h1>
+            <p class="text-sm text-slate-300">
+              直接访问当前域名的 <span class="mono text-cyan-200">/usage</span> 与 <span class="mono text-cyan-200">/token</span>
+            </p>
           </div>
         </div>
       </header>
@@ -81,8 +83,8 @@
           <div class="flex items-center gap-2">
             <i class="lucide lucide-server h-5 w-5 text-cyan-300"></i>
             <div>
-              <div class="text-xs uppercase tracking-wide text-slate-400">当前请求地址</div>
-              <div class="mono text-sm text-cyan-100" id="current-endpoint">http://209.38.152.153:4141/usage</div>
+              <div class="text-xs uppercase tracking-wide text-slate-400">请求地址</div>
+              <div class="mono text-sm text-cyan-100" id="current-endpoint"></div>
             </div>
           </div>
           <div class="flex-1"></div>
@@ -98,8 +100,10 @@
     </div>
 
     <script>
-      const USAGE_URL = "http://209.38.152.153:4141/usage";
-      const TOKEN_URL = "http://209.38.152.153:4141/token";
+      // 固定使用当前域名，确保 Nginx 反代同域部署
+      const BASE = `${window.location.protocol}//${window.location.host}`;
+      const USAGE_URL = `${BASE}/usage`;
+      const TOKEN_URL = `${BASE}/token`;
 
       const state = {
         isLoading: false,
