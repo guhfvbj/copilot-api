@@ -3,6 +3,7 @@ import type { Context } from "hono"
 import consola from "consola"
 import { streamSSE, type SSEMessage } from "hono/streaming"
 
+import { pickAccountForConversation } from "~/lib/accounts"
 import { awaitApproval } from "~/lib/approval"
 import { checkRateLimit } from "~/lib/rate-limit"
 import { state } from "~/lib/state"
@@ -15,13 +16,18 @@ import {
 } from "~/services/copilot/create-chat-completions"
 
 export async function handleCompletion(c: Context) {
-  await checkRateLimit(state)
-
   let payload = await c.req.json<ChatCompletionsPayload>()
+  const conversationId = c.req.header("x-conversation-id") ?? payload.user
+
+  const account = await pickAccountForConversation(conversationId)
+  await checkRateLimit(state, account.id)
   consola.debug("Request payload:", JSON.stringify(payload).slice(-400))
+  consola.info(
+    `Using account "${account.id}" for conversation "${conversationId ?? "anonymous"}"`,
+  )
 
   // Find the selected model
-  const selectedModel = state.models?.data.find(
+  const selectedModel = account.models?.data.find(
     (model) => model.id === payload.model,
   )
 
@@ -47,7 +53,11 @@ export async function handleCompletion(c: Context) {
     consola.debug("Set max_tokens to:", JSON.stringify(payload.max_tokens))
   }
 
-  const response = await createChatCompletions(payload)
+  const response = await createChatCompletions(
+    account,
+    payload,
+    state.vsCodeVersion!,
+  )
 
   if (isNonStreaming(response)) {
     consola.debug("Non-streaming response:", JSON.stringify(response))

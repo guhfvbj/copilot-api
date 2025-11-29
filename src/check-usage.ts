@@ -1,23 +1,47 @@
 import { defineCommand } from "citty"
 import consola from "consola"
 
+import { ensureAccountReady, ensureAccountsInitialized } from "./lib/accounts"
 import { ensurePaths } from "./lib/paths"
-import { setupGitHubToken } from "./lib/token"
+import { state } from "./lib/state"
 import {
   getCopilotUsage,
   type QuotaDetail,
 } from "./services/github/get-copilot-usage"
+import { cacheVSCodeVersion } from "./lib/utils"
 
 export const checkUsage = defineCommand({
   meta: {
     name: "check-usage",
     description: "Show current GitHub Copilot usage/quota information",
   },
-  async run() {
+  args: {
+    account: {
+      type: "string",
+      description: "Account id to use (defaults to first available)",
+    },
+    "account-type": {
+      type: "string",
+      default: "individual",
+      description: "Account type to use when creating a new account",
+    },
+  },
+  async run({ args }) {
     await ensurePaths()
-    await setupGitHubToken()
+    await cacheVSCodeVersion()
+    await ensureAccountsInitialized(args["account-type"])
+
+    const account =
+      (args.account &&
+        state.accounts.find((acc) => acc.id === args.account)) ||
+      state.accounts[0]
+    if (!account) {
+      consola.error("No accounts available")
+      process.exit(1)
+    }
+    await ensureAccountReady(account)
     try {
-      const usage = await getCopilotUsage()
+      const usage = await getCopilotUsage(account, state.vsCodeVersion!)
       const premium = usage.quota_snapshots.premium_interactions
       const premiumTotal = premium.entitlement
       const premiumUsed = premiumTotal - premium.remaining
@@ -43,7 +67,7 @@ export const checkUsage = defineCommand({
       )
 
       consola.box(
-        `Copilot Usage (plan: ${usage.copilot_plan})\n`
+        `Copilot Usage (account: ${account.id}, plan: ${usage.copilot_plan})\n`
           + `Quota resets: ${usage.quota_reset_date}\n`
           + `\nQuotas:\n`
           + `  ${premiumLine}\n`

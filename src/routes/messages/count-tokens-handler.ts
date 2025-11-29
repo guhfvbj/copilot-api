@@ -2,6 +2,7 @@ import type { Context } from "hono"
 
 import consola from "consola"
 
+import { pickAccountForConversation } from "~/lib/accounts"
 import { state } from "~/lib/state"
 import { getTokenCount } from "~/lib/tokenizer"
 
@@ -16,10 +17,14 @@ export async function handleCountTokens(c: Context) {
     const anthropicBeta = c.req.header("anthropic-beta")
 
     const anthropicPayload = await c.req.json<AnthropicMessagesPayload>()
+    const conversationId =
+      c.req.header("x-conversation-id") ?? anthropicPayload.metadata?.user_id
+
+    const account = await pickAccountForConversation(conversationId)
 
     const openAIPayload = translateToOpenAI(anthropicPayload)
 
-    const selectedModel = state.models?.data.find(
+    const selectedModel = account.models?.data.find(
       (model) => model.id === anthropicPayload.model,
     )
 

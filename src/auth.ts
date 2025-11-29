@@ -3,13 +3,14 @@
 import { defineCommand } from "citty"
 import consola from "consola"
 
+import { addAccountInteractive } from "./lib/accounts"
 import { PATHS, ensurePaths } from "./lib/paths"
 import { state } from "./lib/state"
-import { setupGitHubToken } from "./lib/token"
 
 interface RunAuthOptions {
   verbose: boolean
   showToken: boolean
+  accountType: string
 }
 
 export async function runAuth(options: RunAuthOptions): Promise<void> {
@@ -21,8 +22,12 @@ export async function runAuth(options: RunAuthOptions): Promise<void> {
   state.showToken = options.showToken
 
   await ensurePaths()
-  await setupGitHubToken({ force: true })
-  consola.success("GitHub token written to", PATHS.GITHUB_TOKEN_PATH)
+  const account = await addAccountInteractive(options.accountType, {
+    showToken: options.showToken,
+  })
+  consola.success(
+    `GitHub token stored for account "${account.id}" at ${PATHS.ACCOUNTS_PATH}`,
+  )
 }
 
 export const auth = defineCommand({
@@ -42,11 +47,18 @@ export const auth = defineCommand({
       default: false,
       description: "Show GitHub token on auth",
     },
+    "account-type": {
+      alias: "a",
+      type: "string",
+      default: "individual",
+      description: "Account type for the new account (individual, business, enterprise)",
+    },
   },
   run({ args }) {
     return runAuth({
       verbose: args.verbose,
       showToken: args["show-token"],
+      accountType: args["account-type"],
     })
   },
 })

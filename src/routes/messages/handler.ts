@@ -3,6 +3,7 @@ import type { Context } from "hono"
 import consola from "consola"
 import { streamSSE } from "hono/streaming"
 
+import { pickAccountForConversation } from "~/lib/accounts"
 import { awaitApproval } from "~/lib/approval"
 import { checkRateLimit } from "~/lib/rate-limit"
 import { state } from "~/lib/state"
@@ -23,9 +24,12 @@ import {
 import { translateChunkToAnthropicEvents } from "./stream-translation"
 
 export async function handleCompletion(c: Context) {
-  await checkRateLimit(state)
-
   const anthropicPayload = await c.req.json<AnthropicMessagesPayload>()
+  const conversationId =
+    c.req.header("x-conversation-id") ?? anthropicPayload.metadata?.user_id
+
+  const account = await pickAccountForConversation(conversationId)
+  await checkRateLimit(state, account.id)
   consola.debug("Anthropic request payload:", JSON.stringify(anthropicPayload))
 
   const openAIPayload = translateToOpenAI(anthropicPayload)
@@ -33,12 +37,19 @@ export async function handleCompletion(c: Context) {
     "Translated OpenAI request payload:",
     JSON.stringify(openAIPayload),
   )
+  consola.info(
+    `Using account "${account.id}" for conversation "${conversationId ?? "anonymous"}"`,
+  )
 
   if (state.manualApprove) {
     await awaitApproval()
   }
 
-  const response = await createChatCompletions(openAIPayload)
+  const response = await createChatCompletions(
+    account,
+    openAIPayload,
+    state.vsCodeVersion!,
+  )
 
   if (isNonStreaming(response)) {
     consola.debug(

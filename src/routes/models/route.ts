@@ -1,19 +1,28 @@
 import { Hono } from "hono"
 
+import { ensureAccountReady } from "~/lib/accounts"
 import { forwardError } from "~/lib/error"
 import { state } from "~/lib/state"
-import { cacheModels } from "~/lib/utils"
 
 export const modelRoutes = new Hono()
 
 modelRoutes.get("/", async (c) => {
   try {
-    if (!state.models) {
-      // This should be handled by startup logic, but as a fallback.
-      await cacheModels()
+    if (state.accounts.length === 0) {
+      throw new Error("No accounts available. Please add an account first.")
     }
 
-    const models = state.models?.data.map((model) => ({
+    await Promise.all(
+      state.accounts.map((account) => ensureAccountReady(account)),
+    )
+
+    const modelMap = new Map(
+      state.accounts.flatMap((account) => account.models?.data ?? []).map(
+        (model) => [model.id, model],
+      ),
+    )
+
+    const models = Array.from(modelMap.values()).map((model) => ({
       id: model.id,
       object: "model",
       type: "model",

@@ -3,12 +3,14 @@ import { events } from "fetch-event-stream"
 
 import { copilotHeaders, copilotBaseUrl } from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
-import { state } from "~/lib/state"
+import type { Account } from "~/lib/state"
 
 export const createChatCompletions = async (
+  account: Account,
   payload: ChatCompletionsPayload,
+  vsCodeVersion: string,
 ) => {
-  if (!state.copilotToken) throw new Error("Copilot token not found")
+  if (!account.copilotToken) throw new Error("Copilot token not found")
 
   const enableVision = payload.messages.some(
     (x) =>
@@ -24,11 +26,11 @@ export const createChatCompletions = async (
 
   // Build headers and add X-Initiator
   const headers: Record<string, string> = {
-    ...copilotHeaders(state, enableVision),
+    ...copilotHeaders(account, vsCodeVersion, enableVision),
     "X-Initiator": isAgentCall ? "agent" : "user",
   }
 
-  const response = await fetch(`${copilotBaseUrl(state)}/chat/completions`, {
+  const response = await fetch(`${copilotBaseUrl(account)}/chat/completions`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),

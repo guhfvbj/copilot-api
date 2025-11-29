@@ -1,14 +1,17 @@
 import { test, expect, mock } from "bun:test"
 
+import type { Account } from "../src/lib/state"
 import type { ChatCompletionsPayload } from "../src/services/copilot/create-chat-completions"
 
-import { state } from "../src/lib/state"
 import { createChatCompletions } from "../src/services/copilot/create-chat-completions"
 
-// Mock state
-state.copilotToken = "test-token"
-state.vsCodeVersion = "1.0.0"
-state.accountType = "individual"
+const account: Account = {
+  id: "test-account",
+  githubToken: "gh-test",
+  accountType: "individual",
+  copilotToken: "test-token",
+}
+const vscodeVersion = "1.0.0"
 
 // Helper to mock fetch
 const fetchMock = mock(
@@ -31,7 +34,7 @@ test("sets X-Initiator to agent if tool/assistant present", async () => {
     ],
     model: "gpt-test",
   }
-  await createChatCompletions(payload)
+  await createChatCompletions(account, payload, vscodeVersion)
   expect(fetchMock).toHaveBeenCalled()
   const headers = (
     fetchMock.mock.calls[0][1] as { headers: Record<string, string> }
@@ -47,7 +50,7 @@ test("sets X-Initiator to user if only user present", async () => {
     ],
     model: "gpt-test",
   }
-  await createChatCompletions(payload)
+  await createChatCompletions(account, payload, vscodeVersion)
   expect(fetchMock).toHaveBeenCalled()
   const headers = (
     fetchMock.mock.calls[1][1] as { headers: Record<string, string> }

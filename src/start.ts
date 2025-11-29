@@ -6,12 +6,15 @@ import consola from "consola"
 import { serve, type ServerHandler } from "srvx"
 import invariant from "tiny-invariant"
 
+import {
+  ensureAccountReady,
+  ensureAccountsInitialized,
+} from "./lib/accounts"
 import { ensurePaths } from "./lib/paths"
 import { initProxyFromEnv } from "./lib/proxy"
 import { generateEnvScript } from "./lib/shell"
 import { state } from "./lib/state"
-import { setupCopilotToken, setupGitHubToken } from "./lib/token"
-import { cacheModels, cacheVSCodeVersion } from "./lib/utils"
+import { cacheVSCodeVersion } from "./lib/utils"
 import { server } from "./server"
 
 interface RunServerOptions {
@@ -37,11 +40,6 @@ export async function runServer(options: RunServerOptions): Promise<void> {
     consola.info("Verbose logging enabled")
   }
 
-  state.accountType = options.accountType
-  if (options.accountType !== "individual") {
-    consola.info(`Using ${options.accountType} plan GitHub account`)
-  }
-
   state.manualApprove = options.manual
   state.rateLimitSeconds = options.rateLimit
   state.rateLimitWait = options.rateLimitWait
@@ -50,30 +48,40 @@ export async function runServer(options: RunServerOptions): Promise<void> {
   await ensurePaths()
   await cacheVSCodeVersion()
 
-  if (options.githubToken) {
-    state.githubToken = options.githubToken
-    consola.info("Using provided GitHub token")
-  } else {
-    await setupGitHubToken()
-  }
+  await ensureAccountsInitialized(options.accountType, {
+    githubToken: options.githubToken,
+    showToken: options.showToken,
+  })
 
-  await setupCopilotToken()
-  await cacheModels()
+  await Promise.all(state.accounts.map((account) => ensureAccountReady(account)))
+
+  const availableModels = Array.from(
+    new Map(
+      state.accounts
+        .flatMap((account) => account.models?.data ?? [])
+        .map((model) => [model.id, model]),
+    ).values(),
+  )
 
   consola.info(
-    `Available models: \n${state.models?.data.map((model) => `- ${model.id}`).join("\n")}`,
+    `Loaded accounts: ${state.accounts.map((a) => a.id).join(", ")}\nAvailable models: \n${availableModels
+      .map((model) => `- ${model.id}`)
+      .join("\n")}`,
   )
 
   const serverUrl = `http://localhost:${options.port}`
 
   if (options.claudeCode) {
-    invariant(state.models, "Models should be loaded by now")
+    invariant(
+      availableModels.length > 0,
+      "Models should be loaded by now",
+    )
 
     const selectedModel = await consola.prompt(
       "Select a model to use with Claude Code",
       {
         type: "select",
-        options: state.models.data.map((model) => model.id),
+        options: availableModels.map((model) => model.id),
       },
     )
 
@@ -81,7 +89,7 @@ export async function runServer(options: RunServerOptions): Promise<void> {
       "Select a small model to use with Claude Code",
       {
         type: "select",
-        options: state.models.data.map((model) => model.id),
+        options: availableModels.map((model) => model.id),
       },
     )
 

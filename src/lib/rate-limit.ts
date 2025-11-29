@@ -5,10 +5,44 @@ import type { State } from "./state"
 import { HTTPError } from "./error"
 import { sleep } from "./utils"
 
-export async function checkRateLimit(state: State) {
+export async function checkRateLimit(state: State, accountId?: string) {
   if (state.rateLimitSeconds === undefined) return
 
   const now = Date.now()
+
+  if (accountId) {
+    const last = state.accountRequestTimestamps.get(accountId)
+    if (!last) {
+      state.accountRequestTimestamps.set(accountId, now)
+      return
+    }
+
+    const elapsedSeconds = (now - last) / 1000
+    if (elapsedSeconds > state.rateLimitSeconds) {
+      state.accountRequestTimestamps.set(accountId, now)
+      return
+    }
+
+    const waitTimeSeconds = Math.ceil(state.rateLimitSeconds - elapsedSeconds)
+    if (!state.rateLimitWait) {
+      consola.warn(
+        `Rate limit exceeded for account ${accountId}. Need to wait ${waitTimeSeconds} more seconds.`,
+      )
+      throw new HTTPError(
+        "Rate limit exceeded",
+        Response.json({ message: "Rate limit exceeded" }, { status: 429 }),
+      )
+    }
+
+    const waitTimeMs = waitTimeSeconds * 1000
+    consola.warn(
+      `Rate limit reached for account ${accountId}. Waiting ${waitTimeSeconds} seconds before proceeding...`,
+    )
+    await sleep(waitTimeMs)
+    state.accountRequestTimestamps.set(accountId, now)
+    consola.info("Rate limit wait completed, proceeding with request")
+    return
+  }
 
   if (!state.lastRequestTimestamp) {
     state.lastRequestTimestamp = now

@@ -36,6 +36,7 @@ A reverse-engineered proxy for the GitHub Copilot API that exposes it as an Open
 - **Usage Dashboard**: A web-based dashboard to monitor your Copilot API usage, view quotas, and see detailed statistics.
 - **Rate Limit Control**: Manage API usage with rate-limiting options (`--rate-limit`) and a waiting mechanism (`--wait`) to prevent errors from rapid requests.
 - **Manual Request Approval**: Manually approve or deny each API request for fine-grained control over usage (`--manual`).
+- **Multi-account Pooling**: Add multiple GitHub Copilot accounts and automatically load-balance conversations across them (random first pick, stickiness per conversation).
 - **Token Visibility**: Option to display GitHub and Copilot tokens during authentication and refresh for debugging (`--show-token`).
 - **Flexible Authentication**: Authenticate interactively or provide a GitHub token directly, suitable for CI/CD environments.
 - **Support for Different Account Types**: Works with individual, business, and enterprise GitHub Copilot plans.
@@ -142,6 +143,7 @@ Copilot API now uses a subcommand structure with these main commands:
 
 - `start`: Start the Copilot API server. This command will also handle authentication if needed.
 - `auth`: Run GitHub authentication flow without starting the server. This is typically used if you need to generate a token for use with the `--github-token` option, especially in non-interactive environments.
+- `add-account`: Add another GitHub account into the account pool using the same device login flow.
 - `check-usage`: Show your current GitHub Copilot usage and quota information directly in the terminal (no server required).
 - `debug`: Display diagnostic information including version, runtime details, file paths, and authentication status. Useful for troubleshooting and support.
 
@@ -176,6 +178,12 @@ The following command line options are available for the `start` command:
 | Option | Description               | Default | Alias |
 | ------ | ------------------------- | ------- | ----- |
 | --json | Output debug info as JSON | false   | none  |
+
+## Multi-account usage
+
+- Add accounts with `npx copilot-api add-account` (interactive device login). The older `auth` command also adds an account. Account metadata is stored in `~/.local/share/copilot-api/accounts.json` (legacy `github_token` is auto-imported on first run).
+- The server runs on a single port and keeps an account pool. The first request of a conversation picks a random account; the rest of that conversation sticks to the same account. Conversation keys are derived from `X-Conversation-Id` header if present, otherwise `user` (OpenAI payload) or `metadata.user_id` (Anthropic payload). If no key is provided, each request may pick a different account.
+- `GET /usage` returns data for the first account unless you pass `X-Account-Id` to select a specific account.
 
 ## API Endpoints
 
