@@ -3,42 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Copilot 监控面板</title>
+    <title>Copilot 监控控制台</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide-react@0.378.0/dist/umd/lucide.min.js"></script>
+    
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['"Plus Jakarta Sans"', "sans-serif"],
+              sans: ['"Inter"', '"Noto Sans SC"', "sans-serif"],
               mono: ['"JetBrains Mono"', "monospace"],
             },
             colors: {
-              primary: {
-                50: "#eff6ff",
-                100: "#dbeafe",
-                500: "#3b82f6",
-                600: "#2563eb",
-                700: "#1d4ed8",
-              },
+              glass: "rgba(255, 255, 255, 0.7)",
+              glassBorder: "rgba(255, 255, 255, 0.5)",
             },
             animation: {
-              'fade-in': 'fadeIn 0.5s ease-out',
-              'slide-up': 'slideUp 0.5s ease-out',
+              'float': 'float 6s ease-in-out infinite',
+              'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'scale-in': 'scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             },
             keyframes: {
-              fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
               },
               slideUp: {
-                '0%': { transform: 'translateY(10px)', opacity: '0' },
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
                 '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              scaleIn: {
+                '0%': { transform: 'scale(0.95)', opacity: '0' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
               }
             }
           },
@@ -47,93 +47,113 @@
     </script>
     <style>
       body {
-        background-color: #f3f4f6;
+        background: #f0f4f8;
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+          radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+          radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+        background-attachment: fixed;
+        background-size: cover;
         color: #1e293b;
-      }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        -webkit-font-smoothing: antialiased;
       }
       
+      /* Glassmorphism Utilities */
       .glass-panel {
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+      }
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(8px);
-        border: 1px solid rgba(226, 232, 240, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
-
-      .btn-primary {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-        transition: all 0.2s ease;
-      }
-      .btn-primary:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3);
-      }
-      .btn-primary:active {
-        transform: translateY(0);
-      }
-
-      .card-hover {
-        transition: all 0.3s ease;
-      }
-      .card-hover:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      
+      .glass-card:hover {
+        background: rgba(255, 255, 255, 0.9);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
       }
 
       /* Circular Progress */
-      .circle-chart {
-        width: 80px;
-        height: 80px;
+      .circle-chart { width: 80px; height: 80px; }
+      .circle-bg { fill: none; stroke: #e2e8f0; stroke-width: 6; }
+      .circle-progress { 
+        fill: none; 
+        stroke-width: 6; 
+        stroke-linecap: round; 
+        transition: stroke-dasharray 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
       }
-      .circle-bg {
-        fill: none;
-        stroke: #e2e8f0;
-        stroke-width: 2.5;
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.8); }
+
+      /* Animation Stagger Helper */
+      .stagger-1 { animation-delay: 0.1s; }
+      .stagger-2 { animation-delay: 0.2s; }
+      .stagger-3 { animation-delay: 0.3s; }
+      .stagger-4 { animation-delay: 0.4s; }
+
+      /* Background decorative blobs */
+      .blob {
+        position: absolute;
+        filter: blur(80px);
+        z-index: -1;
+        opacity: 0.6;
+        animation: float 10s ease-in-out infinite;
       }
-      .circle-progress {
-        fill: none;
-        stroke-width: 2.5;
-        stroke-linecap: round;
-        transition: stroke-dasharray 1s ease-out;
-      }
+      .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #e0e7ff; animation-delay: 0s; }
+      .blob-2 { top: 20%; right: -10%; width: 400px; height: 400px; background: #fce7f3; animation-delay: -2s; }
+      .blob-3 { bottom: -10%; left: 20%; width: 600px; height: 600px; background: #ccfbf1; animation-delay: -4s; }
     </style>
   </head>
-  <body class="min-h-screen flex flex-col">
-    <nav class="sticky top-0 z-40 glass-panel border-b border-slate-200">
+  <body class="min-h-screen relative overflow-x-hidden text-slate-800">
+    
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <nav class="sticky top-0 z-50 glass-panel border-b-0 mb-6">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16 items-center">
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-blue-50 rounded-lg">
-              <i class="lucide lucide-bot h-6 w-6 text-primary-600"></i>
+        <div class="flex justify-between h-18 items-center py-3">
+          <div class="flex items-center gap-4">
+            <div class="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30">
+              <i class="lucide lucide-layout-dashboard h-6 w-6 text-white"></i>
             </div>
             <div>
-              <h1 class="font-bold text-slate-800 text-lg leading-tight">Copilot Dashboard</h1>
-              <div class="text-[10px] font-mono text-slate-500 tracking-wider uppercase">Usage Monitor</div>
+              <h1 class="font-bold text-slate-800 text-xl tracking-tight">Copilot 监控台</h1>
+              <div class="flex items-center gap-2">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span class="text-xs text-slate-500 font-medium" id="status-text">系统运行正常</span>
+              </div>
             </div>
           </div>
           
           <div class="flex items-center gap-3">
-            <div id="account-selector-container" class="hidden md:block">
-              </div>
-            <div class="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
-            <button id="refresh-btn" class="p-2 text-slate-500 hover:text-primary-600 hover:bg-blue-50 rounded-lg transition-colors" title="刷新数据">
-              <i class="lucide lucide-refresh-cw h-5 w-5"></i>
+            <div id="account-selector-container" class="hidden md:block transition-all"></div>
+            
+            <button id="refresh-btn" class="p-2.5 text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-xl transition-all active:scale-95 group" title="刷新数据">
+              <i class="lucide lucide-refresh-cw h-5 w-5 group-hover:rotate-180 transition-transform duration-500"></i>
             </button>
-            <button id="add-account-btn" class="btn-primary text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-              <i class="lucide lucide-plus h-4 w-4"></i>
+            
+            <button id="add-account-btn" class="relative overflow-hidden bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-95">
+              <i class="lucide lucide-plus-circle h-4 w-4"></i>
               <span class="hidden sm:inline">添加账号</span>
             </button>
           </div>
@@ -141,91 +161,94 @@
       </div>
     </nav>
 
-    <div class="md:hidden px-4 py-3 bg-white border-b border-slate-200" id="mobile-selector-container">
-        </div>
+    <div class="md:hidden px-4 mb-6" id="mobile-selector-container"></div>
 
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-8">
       
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="h-8 w-8 rounded-full bg-green-50 flex items-center justify-center border border-green-100">
-                <div class="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse"></div>
+      <div class="glass-panel rounded-2xl p-1.5 flex items-center justify-between gap-4 pr-4 animate-slide-up">
+        <div class="flex items-center gap-3 bg-white/50 rounded-xl px-4 py-2 flex-1">
+            <i class="lucide lucide-server h-4 w-4 text-blue-500"></i>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span class="text-xs text-slate-500 uppercase font-bold tracking-wider">当前接口</span>
+                <span class="font-mono text-xs sm:text-sm text-slate-700 truncate" id="current-endpoint">...</span>
             </div>
-            <div>
-                <div class="text-xs text-slate-500">API Endpoint</div>
-                <div class="font-mono text-sm text-slate-700 font-medium" id="current-endpoint">...</div>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
-            <i class="lucide lucide-shield-check h-3 w-3"></i>
-            <span>Secure Connection</span>
         </div>
       </div>
 
-      <div id="content-area" class="space-y-8 min-h-[400px]">
+      <div id="content-area" class="min-h-[400px]">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
-            <div class="h-40 bg-slate-200 rounded-xl"></div>
-            <div class="h-40 bg-slate-200 rounded-xl"></div>
-            <div class="h-40 bg-slate-200 rounded-xl"></div>
+            <div class="h-48 bg-white/40 rounded-2xl"></div>
+            <div class="h-48 bg-white/40 rounded-2xl"></div>
+            <div class="h-48 bg-white/40 rounded-2xl"></div>
         </div>
       </div>
 
     </main>
 
-    <footer class="py-6 text-center text-sm text-slate-400">
-      <p>&copy; 2024 Copilot Usage Dashboard</p>
-    </footer>
-
-    <div id="add-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
-
+    <div id="add-modal" class="fixed inset-0 z-[100] hidden" role="dialog" aria-modal="true">
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
       <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-          <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
-            <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-              <div class="sm:flex sm:items-start">
-                <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                  <i class="lucide lucide-key h-5 w-5 text-blue-600"></i>
+        <div class="flex min-h-full items-center justify-center p-4">
+          <div class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:w-full sm:max-w-lg opacity-0 scale-95" id="modal-panel">
+            
+            <div class="absolute top-0 right-0 pt-4 pr-4">
+                <button id="modal-close-icon" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="lucide lucide-x h-6 w-6"></i>
+                </button>
+            </div>
+
+            <div class="p-8">
+              <div class="flex items-center gap-4 mb-6">
+                <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                  <i class="lucide lucide-key-round h-6 w-6"></i>
                 </div>
-                <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                  <h3 class="text-lg font-semibold leading-6 text-slate-900" id="modal-title">添加新账号</h3>
-                  <div class="mt-2">
-                    <p class="text-sm text-slate-500 mb-4">请输入 GitHub Token 以添加新的 Copilot 账号到监控池。</p>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">GitHub Token</label>
-                            <input id="token-input" type="text" class="w-full rounded-lg border-slate-300 border shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5 px-3 font-mono" placeholder="ghp_xxxxxxxxxxxx">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">账号类型</label>
-                            <div class="relative">
-                                <select id="account-type" class="w-full appearance-none rounded-lg border-slate-300 border bg-white py-2.5 px-3 pr-8 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
-                                    <option value="individual">Individual (个人)</option>
-                                    <option value="business">Business (商业)</option>
-                                    <option value="enterprise">Enterprise (企业)</option>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
-                                    <i class="lucide lucide-chevron-down h-4 w-4"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                  </div>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900">接入新账号</h3>
+                    <p class="text-sm text-slate-500">请输入 GitHub Token 以开始监控</p>
                 </div>
               </div>
+
+              <div class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">GitHub Token</label>
+                    <div class="relative">
+                        <i class="lucide lucide-lock absolute left-3 top-3 h-4 w-4 text-slate-400"></i>
+                        <input id="token-input" type="text" class="w-full pl-10 rounded-xl border-slate-200 border-2 bg-slate-50 focus:bg-white py-2.5 px-3 font-mono text-sm focus:border-blue-500 focus:ring-0 transition-colors outline-none" placeholder="ghp_xxxxxxxxxxxx">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">账号类型</label>
+                    <div class="relative">
+                        <select id="account-type" class="w-full appearance-none rounded-xl border-slate-200 border-2 bg-slate-50 py-2.5 px-3 pr-8 focus:border-blue-500 focus:outline-none transition-colors text-sm font-medium text-slate-700">
+                            <option value="individual">Individual (个人版)</option>
+                            <option value="business">Business (商业版)</option>
+                            <option value="enterprise">Enterprise (企业版)</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                            <i class="lucide lucide-chevron-down h-4 w-4"></i>
+                        </div>
+                    </div>
+                </div>
+              </div>
+              
+              <div id="modal-error" class="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg hidden flex items-center gap-2">
+                <i class="lucide lucide-alert-circle h-4 w-4"></i>
+                <span id="modal-error-text"></span>
+              </div>
+
+              <div class="mt-8 flex gap-3">
+                <button id="modal-cancel" type="button" class="flex-1 rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all">取消</button>
+                <button id="modal-submit" type="button" class="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all">确认提交</button>
+              </div>
             </div>
-            <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100">
-              <button id="modal-submit" type="button" class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all">提交添加</button>
-              <button id="modal-cancel" type="button" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-all">取消</button>
-            </div>
-            <div id="modal-error" class="bg-red-50 text-red-600 text-xs py-2 px-6 text-center hidden"></div>
           </div>
         </div>
       </div>
     </div>
 
     <script>
+      /** * Constants & State 
+       */
       const BASE = `${window.location.protocol}//${window.location.host}`;
       const USAGE_URL = `${BASE}/usage`;
       const TOKEN_URL = `${BASE}/token`;
@@ -239,7 +262,49 @@
         accountId: "",
       };
 
-      // DOM Elements
+      /**
+       * Localization Dictionary (CN)
+       */
+      const DICT = {
+        // Categories
+        account: "当前账号",
+        chat: "对话 (Chat)",
+        completions: "代码补全 (Completions)",
+        premium_interactions: "高级交互 (Premium)",
+        
+        // Metrics
+        entitlement: "总配额",
+        remaining: "剩余额度",
+        used: "已使用",
+        percentage: "使用率",
+        
+        // Boolean / Status
+        true: "是",
+        false: "否",
+        unlimited: "无限配额",
+        
+        // Metadata fields
+        public_suggestions: "公共代码建议",
+        ide_chat: "IDE 聊天",
+        platform_chat: "网页端聊天",
+        cli_chat: "命令行聊天",
+        dotcom_chat: "GitHub.com 聊天",
+        access_type_sku: "订阅 SKU",
+        plan_type: "计划类型",
+        copilot_plan: "Copilot 方案",
+        chat_enabled: "聊天功能开启",
+        organization_list: "所属组织",
+        quota_reset_date: "配额重置时间",
+        assigned_date: "授权分配时间"
+      };
+
+      function t(key) {
+        return DICT[key] || key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      }
+
+      /**
+       * DOM Elements
+       */
       const contentArea = document.getElementById("content-area");
       const refreshBtn = document.getElementById("refresh-btn");
       const addAccountBtn = document.getElementById("add-account-btn");
@@ -247,39 +312,75 @@
       const accountSelectorContainer = document.getElementById("account-selector-container");
       const mobileSelectorContainer = document.getElementById("mobile-selector-container");
       
-      // Modal Elements
+      // Modal
       const modal = document.getElementById("add-modal");
       const modalBackdrop = document.getElementById("modal-backdrop");
       const modalPanel = document.getElementById("modal-panel");
       const modalError = document.getElementById("modal-error");
+      const modalErrorText = document.getElementById("modal-error-text");
 
-      // --- Rendering Helpers ---
-
+      /**
+       * Visual Helpers
+       */
       function createIcons() {
         if (typeof lucide !== "undefined") lucide.createIcons();
       }
 
-      function getCircularProgress(percentage, colorClass) {
-        const radius = 32;
+      // Number Counter Animation
+      function animateValue(obj, start, end, duration) {
+        if (!obj) return;
+        let startTimestamp = null;
+        const step = (timestamp) => {
+          if (!startTimestamp) startTimestamp = timestamp;
+          const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+          // Ease out expo
+          const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+          const val = Math.floor(easeProgress * (end - start) + start);
+          obj.innerHTML = val.toLocaleString();
+          if (progress < 1) {
+            window.requestAnimationFrame(step);
+          }
+        };
+        window.requestAnimationFrame(step);
+      }
+
+      function getCircularProgress(percentage, colorClass, uniqueId) {
+        const radius = 34;
         const circumference = radius * 2 * Math.PI;
+        // SVG renders backwards, so we calculate offset accordingly
         const offset = circumference - (percentage / 100) * circumference;
         
-        let strokeColor = "#3b82f6"; // blue-500
+        let strokeColor = "#3b82f6"; // blue
         if (colorClass.includes("orange")) strokeColor = "#f97316";
-        if (colorClass.includes("red")) strokeColor = "#dc2626";
-        if (colorClass.includes("green")) strokeColor = "#22c55e";
+        if (colorClass.includes("red")) strokeColor = "#ef4444";
+        if (colorClass.includes("green")) strokeColor = "#10b981";
+
+        // We use a style to animate the stroke-dashoffset after render
+        setTimeout(() => {
+            const el = document.getElementById(`circle-${uniqueId}`);
+            if(el) el.style.strokeDashoffset = offset;
+        }, 100);
 
         return `
-            <svg class="circle-chart transform -rotate-90" viewBox="0 0 72 72">
-                <circle class="circle-bg" cx="36" cy="36" r="${radius}"></circle>
-                <circle class="circle-progress" cx="36" cy="36" r="${radius}" 
-                    stroke-dasharray="${circumference}" 
-                    stroke-dashoffset="${offset}"
-                    stroke="${strokeColor}"
-                ></circle>
-            </svg>
+            <div class="relative flex items-center justify-center">
+                <svg class="circle-chart" viewBox="0 0 76 76">
+                    <circle class="circle-bg" cx="38" cy="38" r="${radius}" stroke="rgba(226, 232, 240, 0.5)"></circle>
+                    <circle id="circle-${uniqueId}" class="circle-progress" cx="38" cy="38" r="${radius}" 
+                        stroke-dasharray="${circumference}" 
+                        stroke-dashoffset="${circumference}"
+                        stroke="${strokeColor}"
+                    ></circle>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center flex-col">
+                    <span class="text-xs font-bold text-slate-700">${percentage.toFixed(0)}%</span>
+                </div>
+            </div>
         `;
       }
+
+      /**
+       * Rendering Components
+       */
 
       function renderAccountSelector() {
         const count = state.accounts.length;
@@ -291,16 +392,16 @@
         }
 
         const options = state.accounts
-          .map((acc) =>`<option value="${acc.id}" ${state.accountId === acc.id ? "selected" : ""}>${acc.id} (${acc.accountType || 'Unknown'})</option>`)
+          .map((acc) =>`<option value="${acc.id}" ${state.accountId === acc.id ? "selected" : ""}>${acc.id} (${acc.accountType || '未知'})</option>`)
           .join("");
 
         const selectorHTML = `
             <div class="relative group">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="lucide lucide-user h-4 w-4 text-slate-400"></i>
+                    <i class="lucide lucide-users h-4 w-4 text-blue-500"></i>
                 </div>
-                <select id="account-select-desktop" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-9 pr-8 py-2 appearance-none shadow-sm cursor-pointer hover:border-blue-300 transition-colors">
-                    <option value="">Auto (Default)</option>
+                <select id="account-select-desktop" class="bg-white/80 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 block w-full pl-9 pr-8 py-2.5 appearance-none shadow-sm cursor-pointer hover:bg-white transition-colors font-medium">
+                    <option value="">自动 (Auto)</option>
                     ${options}
                 </select>
                 <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
@@ -333,78 +434,103 @@
 
       function renderError(message) {
         return `
-          <div class="rounded-xl border border-red-200 bg-red-50 p-8 text-center animate-fade-in">
-            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4">
-              <i class="lucide lucide-alert-triangle h-6 w-6 text-red-600"></i>
+          <div class="glass-panel rounded-2xl p-10 text-center animate-slide-up border-red-100 bg-red-50/50">
+            <div class="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4 shadow-inner">
+              <i class="lucide lucide-cloud-off h-8 w-8 text-red-500"></i>
             </div>
-            <h3 class="text-lg font-semibold text-red-900">无法获取数据</h3>
-            <p class="mt-2 text-sm text-red-700 max-w-md mx-auto">${message}</p>
-            <button onclick="fetchAll()" class="mt-4 text-sm font-medium text-red-600 hover:text-red-800 underline">重试</button>
+            <h3 class="text-xl font-bold text-slate-800">数据获取失败</h3>
+            <p class="mt-2 text-slate-500 max-w-md mx-auto">${message}</p>
+            <button onclick="fetchAll()" class="mt-6 px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all font-medium shadow-sm">
+                重试连接
+            </button>
           </div>
         `;
       }
 
       function renderSpinner() {
         return `
-          <div class="flex flex-col items-center justify-center py-20 animate-fade-in">
-            <div class="relative">
-                <div class="h-16 w-16 rounded-full border-4 border-slate-200"></div>
+          <div class="flex flex-col items-center justify-center py-32 animate-fade-in">
+             <div class="relative">
+                <div class="h-16 w-16 rounded-full border-4 border-slate-200/50"></div>
                 <div class="absolute top-0 left-0 h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
-            </div>
-            <p class="mt-4 text-slate-500 font-medium animate-pulse">正在同步数据...</p>
+             </div>
+             <p class="mt-6 text-slate-500 font-medium tracking-wide animate-pulse">正在同步云端数据...</p>
           </div>
         `;
       }
 
-      function renderQuotaCard(title, detail) {
+      function renderQuotaCard(key, detail, index) {
         const { entitlement, remaining, percent_remaining, unlimited } = detail;
         const percentUsed = unlimited ? 0 : 100 - percent_remaining;
-        const used = unlimited ? 0 : entitlement - remaining;
         
         let colorClass = "text-blue-600";
-        if (!unlimited && percentUsed > 75) colorClass = "text-orange-500";
-        if (!unlimited && percentUsed > 90) colorClass = "text-red-600";
-        if (unlimited) colorClass = "text-green-500";
+        let statusText = "状态良好";
+        let statusBg = "bg-blue-50 text-blue-700";
+        
+        if (!unlimited) {
+            if (percentUsed > 75) {
+                colorClass = "text-orange-500";
+                statusText = "用量预警";
+                statusBg = "bg-orange-50 text-orange-700";
+            }
+            if (percentUsed > 90) {
+                colorClass = "text-red-600";
+                statusText = "即将耗尽";
+                statusBg = "bg-red-50 text-red-700";
+            }
+        } else {
+            colorClass = "text-green-500";
+            statusText = "无限畅享";
+            statusBg = "bg-green-50 text-green-700";
+        }
 
-        const iconMap = {
-            chat: 'message-square',
-            completions: 'code-2',
-            premium_interactions: 'sparkles'
-        };
-        const iconName = iconMap[title] || 'activity';
+        const title = t(key);
+        const uniqueId = key + Math.random().toString(36).substr(2, 9);
+        const delayClass = `stagger-${(index % 4) + 1}`;
+
+        // Icon Selection
+        let iconName = 'zap';
+        if (key.includes('chat')) iconName = 'message-square-text';
+        if (key.includes('completion')) iconName = 'code-2';
+
+        // Trigger counter animation after render
+        setTimeout(() => {
+            const el = document.getElementById(`count-${uniqueId}`);
+            if(el) animateValue(el, 0, unlimited ? 0 : remaining, 1500);
+        }, 100);
 
         return `
-          <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm card-hover flex flex-col justify-between animate-slide-up">
-            <div class="flex justify-between items-start mb-4">
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between animate-slide-up ${delayClass}">
+            <div class="flex justify-between items-start mb-6">
                 <div class="flex items-center gap-3">
-                    <div class="p-2.5 rounded-lg bg-slate-50 text-slate-600">
-                        <i class="lucide lucide-${iconName} h-5 w-5"></i>
+                    <div class="p-3 rounded-xl bg-gradient-to-br from-white to-slate-100 shadow-sm border border-white/50">
+                        <i class="lucide lucide-${iconName} h-5 w-5 text-slate-600"></i>
                     </div>
                     <div>
-                        <div class="text-sm font-semibold text-slate-700 capitalize">${title.replace(/_/g, " ")}</div>
-                        <div class="text-xs text-slate-400">Quota Type</div>
+                        <div class="text-base font-bold text-slate-800">${title}</div>
+                        <div class="text-xs text-slate-500">配额监控</div>
                     </div>
                 </div>
-                ${unlimited 
-                    ? `<span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Unlimited</span>`
-                    : `<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">${percentUsed.toFixed(1)}% Used</span>`
-                }
+                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${statusBg}">
+                    ${statusText}
+                </span>
             </div>
 
             <div class="flex items-end justify-between">
                 <div>
-                    <div class="text-3xl font-bold text-slate-800 tracking-tight">
-                        ${unlimited ? '∞' : remaining.toLocaleString()}
+                    <div class="flex items-baseline gap-1">
+                        <span id="count-${uniqueId}" class="text-3xl font-extrabold text-slate-800 tracking-tight">
+                            ${unlimited ? '∞' : '0'}
+                        </span>
+                        ${!unlimited ? `<span class="text-sm text-slate-400 font-medium">/ ${entitlement >= 1000 ? (entitlement/1000).toFixed(0)+'k' : entitlement}</span>` : ''}
                     </div>
-                    <div class="text-xs text-slate-500 mt-1 font-mono">
-                        Available / ${unlimited ? '∞' : entitlement.toLocaleString()}
-                    </div>
+                    <div class="text-xs text-slate-500 mt-1 font-medium">可用余额</div>
                 </div>
                 
-                <div class="relative flex items-center justify-center">
+                <div class="scale-110">
                     ${unlimited 
-                        ? `<i class="lucide lucide-infinity h-10 w-10 text-green-200"></i>` 
-                        : getCircularProgress(percentUsed, colorClass)
+                        ? `<div class="h-[80px] w-[80px] flex items-center justify-center"><i class="lucide lucide-infinity h-10 w-10 text-green-400"></i></div>` 
+                        : getCircularProgress(percentUsed, colorClass, uniqueId)
                     }
                 </div>
             </div>
@@ -412,32 +538,25 @@
         `;
       }
 
-      function formatMaybeDate(value) {
-        if (typeof value !== "string") return null;
-        // Simple check if it looks like a date/timestamp
-        if (!value.match(/^\d{4}-\d{2}-\d{2}/) && !value.match(/\d{4}-\d{2}-\d{2}T/)) return null;
-        
-        const d = new Date(value);
-        if (Number.isNaN(d.getTime())) return null;
-        
-        const pad = (n) => n.toString().padStart(2, "0");
-        return `<span title="${value}">${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} <span class="text-slate-400 text-xs">${pad(d.getHours())}:${pad(d.getMinutes())}</span></span>`;
-      }
-
       function formatValue(key, v) {
         if (typeof v === "boolean") {
             return v 
-                ? `<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">True</span>`
-                : `<span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">False</span>`;
+                ? `<span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700"><i class="lucide lucide-check h-3 w-3"></i> ${t('true')}</span>`
+                : `<span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600"><i class="lucide lucide-x h-3 w-3"></i> ${t('false')}</span>`;
         }
         if (typeof v === "number") {
-             if (key.includes("percent")) return `${v.toFixed(1)}%`;
-             return v.toLocaleString();
+             if (key.includes("percent")) return `<span class="font-mono text-blue-600">${v.toFixed(1)}%</span>`;
+             return `<span class="font-mono">${v.toLocaleString()}</span>`;
         }
         if (typeof v === "string") {
-            const date = formatMaybeDate(v);
-            if (date) return date;
-            if (v.startsWith("http")) return `<a href="${v}" target="_blank" class="text-blue-500 hover:underline truncate block max-w-[200px]">${v}</a>`;
+            // Check for date
+            if (v.match(/^\d{4}-\d{2}-\d{2}/) || v.match(/\d{4}-\d{2}-\d{2}T/)) {
+                const d = new Date(v);
+                if (!Number.isNaN(d.getTime())) {
+                    return `<span class="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">${d.toLocaleString('zh-CN', {hour12: false})}</span>`;
+                }
+            }
+            if (v.startsWith("http")) return `<a href="${v}" target="_blank" class="text-blue-500 hover:underline truncate block max-w-[150px] text-xs">查看链接</a>`;
             return v;
         }
         return String(v);
@@ -446,7 +565,8 @@
       function flattenObject(obj, prefix = '') {
         let result = {};
         for (const [k, v] of Object.entries(obj)) {
-            if (k === 'quota_snapshots') continue; // Handled separately
+            if (k === 'quota_snapshots') continue; // Handled in cards
+            if (k === 'account') continue; // Handled in header
             if (v && typeof v === 'object' && !Array.isArray(v)) {
                 const flat = flattenObject(v, prefix ? `${prefix}.${k}` : k);
                 result = { ...result, ...flat };
@@ -464,63 +584,56 @@
         if (entries.length === 0) return '';
 
         const rows = entries.map(([k, v]) => {
-            const label = k.split('.').pop().replace(/_/g, " ").replace(/([A-Z])/g, ' $1').trim();
-            const value = Array.isArray(v) ? `[ ${v.length} items ]` : formatValue(k, v);
+            const pureKey = k.split('.').pop();
+            const label = t(pureKey);
+            const value = Array.isArray(v) ? `[ ${v.length} 项 ]` : formatValue(pureKey, v);
             
             return `
-                <div class="flex flex-col p-3 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100">
-                    <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">${label}</dt>
-                    <dd class="text-sm text-slate-800 font-mono break-all">${value}</dd>
+                <div class="flex flex-col p-4 bg-white/40 rounded-xl hover:bg-white/80 transition-colors border border-transparent hover:border-blue-100 group">
+                    <dt class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 group-hover:text-blue-500 transition-colors">${label}</dt>
+                    <dd class="text-sm text-slate-700 break-all font-medium">${value}</dd>
                 </div>
             `;
         }).join("");
 
         return `
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-slide-up" style="animation-delay: 0.1s;">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-                    <i class="lucide lucide-database h-4 w-4 text-slate-400"></i>
-                    <h3 class="font-semibold text-slate-700">Meta Information</h3>
+            <div class="glass-panel rounded-2xl overflow-hidden animate-slide-up" style="animation-delay: 0.2s;">
+                <div class="px-6 py-4 border-b border-white/40 bg-white/30 flex items-center gap-2">
+                    <div class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
+                        <i class="lucide lucide-file-text h-4 w-4"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-700">详细参数 (Metadata)</h3>
                 </div>
-                <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div class="p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     ${rows}
                 </div>
             </div>
         `;
       }
 
-      // --- Main Logic ---
-
+      /**
+       * Core Logic (Unchanged)
+       */
       async function fetchAccounts() {
         try {
           const res = await fetch(ACCOUNT_URL);
           if (res.ok) {
             const json = await res.json();
             if (Array.isArray(json.accounts)) {
-              state.accounts = json.accounts.map((a) => ({
-                id: a.id || "unknown",
-                accountType: a.accountType,
-              }));
+              state.accounts = json.accounts.map(a => ({ id: a.id || "unknown", accountType: a.accountType }));
             }
           }
-          // fallback
           if (!state.accounts.length) {
             const tRes = await fetch(TOKEN_URL);
             if (tRes.ok) {
               const json = await tRes.json();
               if (Array.isArray(json.tokens)) {
-                state.accounts = json.tokens.map((t) => ({
-                  id: t.id || "unknown",
-                  accountType: t.accountType,
-                }));
+                state.accounts = json.tokens.map(t => ({ id: t.id || "unknown", accountType: t.accountType }));
               }
             }
           }
-          if (!state.accountId && state.accounts.length > 0) {
-            state.accountId = state.accounts[0].id;
-          }
-        } catch (e) {
-          console.warn("账户列表获取失败:", e);
-        }
+          if (!state.accountId && state.accounts.length > 0) state.accountId = state.accounts[0].id;
+        } catch (e) { console.warn("账户获取失败", e); }
       }
 
       async function addAccount(githubToken, accountType) {
@@ -529,9 +642,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ githubToken, accountType }),
         });
-        if (!res.ok) {
-          throw new Error(`Error: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Status ${res.status}`);
         return res.json();
       }
 
@@ -539,22 +650,21 @@
         const headers = {};
         if (state.accountId) headers["X-Account-Id"] = state.accountId;
         const res = await fetch(USAGE_URL, { headers });
-        if (!res.ok) throw new Error(`API Error ${res.status}: ${res.statusText}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         return res.json();
       }
 
       async function fetchAll() {
         state.isLoading = true;
         state.error = null;
-        render(); // show loading
-        
+        render(); 
         try {
           await fetchAccounts();
           renderAccountSelector();
           const data = await fetchUsage();
           state.data = data;
         } catch (err) {
-          state.error = err.message || "Failed to fetch";
+          state.error = err.message || "请求失败";
           state.data = null;
         } finally {
           state.isLoading = false;
@@ -563,44 +673,40 @@
       }
 
       function render() {
-        // 1. Loading
         if (state.isLoading) {
           contentArea.innerHTML = renderSpinner();
           createIcons();
           return;
         }
-
-        // 2. Error
         if (state.error) {
           contentArea.innerHTML = renderError(state.error);
           createIcons();
           return;
         }
-
-        // 3. Data
         if (state.data) {
           let cardsHtml = '';
           if (state.data.quota_snapshots) {
             cardsHtml = `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
                     ${Object.entries(state.data.quota_snapshots)
-                        .map(([key, value]) => renderQuotaCard(key, value))
+                        .map(([key, value], idx) => renderQuotaCard(key, value, idx))
                         .join("")}
                 </div>
             `;
           } else {
-             cardsHtml = `
-                <div class="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300">
-                    <p class="text-slate-500">No quota snapshots available.</p>
-                </div>
-             `;
+             cardsHtml = `<div class="p-8 text-center glass-panel rounded-2xl mb-6 text-slate-500">无配额快照数据</div>`;
           }
 
           contentArea.innerHTML = `
             ${state.data.account ? 
-                `<div class="flex items-center gap-2 mb-4 animate-fade-in">
-                    <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Active Account</span>
-                    <span class="text-sm font-mono text-slate-600">${state.data.account}</span>
+                `<div class="flex items-center gap-3 mb-6 animate-scale-in">
+                    <div class="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shadow-lg shadow-blue-300">
+                        <i class="lucide lucide-user h-5 w-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500 font-bold uppercase tracking-wide">当前活跃账号</div>
+                        <div class="text-lg font-mono font-bold text-slate-800">${state.data.account}</div>
+                    </div>
                  </div>` : ''}
             
             ${cardsHtml}
@@ -609,34 +715,35 @@
           createIcons();
           return;
         }
-
-        // 4. Empty / Init State
+        
+        // Empty State
         contentArea.innerHTML = `
-          <div class="rounded-xl bg-white border border-slate-200 p-12 text-center shadow-sm">
-             <div class="mx-auto h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                 <i class="lucide lucide-layout-dashboard h-10 w-10 text-slate-300"></i>
+          <div class="glass-panel rounded-2xl p-16 text-center animate-slide-up">
+             <div class="mx-auto h-24 w-24 bg-gradient-to-tr from-blue-100 to-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                 <i class="lucide lucide-bar-chart-2 h-10 w-10 text-blue-400"></i>
              </div>
-             <h3 class="text-lg font-semibold text-slate-900">Dashboard Ready</h3>
-             <p class="text-slate-500 mt-2">Click refresh to load your Copilot usage data.</p>
+             <h3 class="text-xl font-bold text-slate-900">准备就绪</h3>
+             <p class="text-slate-500 mt-2">点击上方“刷新”按钮获取最新 Copilot 用量数据</p>
           </div>
         `;
         createIcons();
       }
 
-      // --- Modal Logic ---
+      /**
+       * Modal Logic
+       */
       function toggleModal(show) {
         if (show) {
             modal.classList.remove("hidden");
-            // Small delay for transition
             setTimeout(() => {
                 modalBackdrop.classList.remove("opacity-0");
-                modalPanel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
-                modalPanel.classList.add("opacity-100", "translate-y-0", "sm:scale-100");
+                modalPanel.classList.remove("opacity-0", "scale-95");
+                modalPanel.classList.add("opacity-100", "scale-100");
             }, 10);
         } else {
             modalBackdrop.classList.add("opacity-0");
-            modalPanel.classList.add("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
-            modalPanel.classList.remove("opacity-100", "translate-y-0", "sm:scale-100");
+            modalPanel.classList.add("opacity-0", "scale-95");
+            modalPanel.classList.remove("opacity-100", "scale-100");
             setTimeout(() => {
                 modal.classList.add("hidden");
                 modalError.classList.add("hidden");
@@ -646,13 +753,11 @@
       }
 
       function initModal() {
-        document.getElementById("modal-cancel").onclick = () => toggleModal(false);
+        const close = () => toggleModal(false);
+        document.getElementById("modal-cancel").onclick = close;
+        document.getElementById("modal-close-icon").onclick = close;
         addAccountBtn.onclick = () => toggleModal(true);
-        
-        // Close on backdrop click
-        modal.onclick = (e) => {
-            if (e.target === modal || e.target.parentElement === modal) toggleModal(false);
-        };
+        modal.onclick = (e) => { if (e.target === modal || e.target.parentElement === modal) close(); };
 
         document.getElementById("modal-submit").onclick = async () => {
           const tokenInput = document.getElementById("token-input");
@@ -665,14 +770,13 @@
           modalError.classList.add("hidden");
           
           if (!token) {
-            modalError.textContent = "Please enter a valid GitHub Token";
+            modalErrorText.textContent = "Token 不能为空";
             modalError.classList.remove("hidden");
             return;
           }
 
-          // Loading state
-          const originalBtnText = btn.innerHTML;
-          btn.innerHTML = `<i class="lucide lucide-loader-2 h-4 w-4 animate-spin"></i> Processing...`;
+          const originalText = btn.innerHTML;
+          btn.innerHTML = `<i class="lucide lucide-loader-2 h-4 w-4 animate-spin"></i> 处理中...`;
           btn.disabled = true;
 
           try {
@@ -680,21 +784,20 @@
             toggleModal(false);
             await fetchAll();
           } catch (err) {
-            modalError.textContent = err.message || "Failed to add account";
+            modalErrorText.textContent = err.message || "添加失败，请检查 Token";
             modalError.classList.remove("hidden");
           } finally {
-            btn.innerHTML = originalBtnText;
+            btn.innerHTML = originalText;
             btn.disabled = false;
           }
         };
       }
 
-      // Initialize
+      // Start
       refreshBtn.onclick = fetchAll;
       endpointLabel.textContent = USAGE_URL;
       initModal();
       fetchAll();
-
     </script>
   </body>
 </html>
