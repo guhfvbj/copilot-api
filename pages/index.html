@@ -60,6 +60,19 @@
       .mono {
         font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
       }
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        z-index: 50;
+      }
+      .modal.active {
+        display: flex;
+      }
     </style>
   </head>
   <body class="min-h-screen">
@@ -72,7 +85,8 @@
           <div>
             <h1 class="text-2xl font-bold text-white">Copilot 用量面板</h1>
             <p class="text-sm text-slate-300">
-              直接访问当前域名的 <span class="mono text-cyan-200">/usage</span> 与 <span class="mono text-cyan-200">/token</span>
+              前端与接口同域，直接调用 <span class="mono text-cyan-200">/usage</span> 与
+              <span class="mono text-cyan-200">/token</span>
             </p>
           </div>
         </div>
@@ -88,10 +102,16 @@
             </div>
           </div>
           <div class="flex-1"></div>
-          <button id="refresh-btn" class="btn flex items-center gap-2 self-start">
-            <i class="lucide lucide-refresh-cw h-4 w-4"></i>
-            <span>刷新</span>
-          </button>
+          <div class="flex gap-2">
+            <button id="add-account-btn" class="btn flex items-center gap-2 self-start">
+              <i class="lucide lucide-plus h-4 w-4"></i>
+              <span>添加账号</span>
+            </button>
+            <button id="refresh-btn" class="btn flex items-center gap-2 self-start">
+              <i class="lucide lucide-refresh-cw h-4 w-4"></i>
+              <span>刷新</span>
+            </button>
+          </div>
         </div>
         <div id="account-selector"></div>
       </section>
@@ -99,11 +119,48 @@
       <div id="content-area" class="space-y-4"></div>
     </div>
 
+    <div id="add-modal" class="modal">
+      <div class="card p-6 w-full max-w-lg space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="text-lg font-semibold text-white">手动添加账号</div>
+          <button id="modal-close" class="text-slate-300 hover:text-white">
+            <i class="lucide lucide-x h-5 w-5"></i>
+          </button>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">GitHub Token</label>
+          <input
+            id="token-input"
+            class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            placeholder="ghp_xxx"
+          />
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">账号类型</label>
+          <select
+            id="account-type"
+            class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+          >
+            <option value="individual">individual</option>
+            <option value="business">business</option>
+            <option value="enterprise">enterprise</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="modal-cancel" class="px-4 py-2 text-sm text-slate-200">取消</button>
+          <button id="modal-submit" class="btn flex items-center gap-2">
+            <i class="lucide lucide-save h-4 w-4"></i><span>提交</span>
+          </button>
+        </div>
+        <div id="modal-error" class="text-sm text-red-300"></div>
+      </div>
+    </div>
+
     <script>
-      // 固定使用当前域名，确保 Nginx 反代同域部署
       const BASE = `${window.location.protocol}//${window.location.host}`;
       const USAGE_URL = `${BASE}/usage`;
       const TOKEN_URL = `${BASE}/token`;
+      const ACCOUNT_URL = `${BASE}/accounts`;
 
       const state = {
         isLoading: false,
@@ -115,8 +172,10 @@
 
       const contentArea = document.getElementById("content-area");
       const refreshBtn = document.getElementById("refresh-btn");
+      const addAccountBtn = document.getElementById("add-account-btn");
       const endpointLabel = document.getElementById("current-endpoint");
       const accountSelectorSlot = document.getElementById("account-selector");
+      const modal = document.getElementById("add-modal");
 
       function createIcons() {
         if (typeof lucide !== "undefined") lucide.createIcons();
@@ -198,28 +257,54 @@
         if (obj === null || typeof obj !== "object") {
           return `<span class="text-cyan-200">${JSON.stringify(obj)}</span>`;
         }
+        const labelMap = {
+          account: "账号",
+          access_type_sku: "套餐 SKU",
+          analytics_tracking_id: "追踪 ID",
+          assigned_date: "分配日期",
+          can_signup_for_limited: "可注册精简版",
+          chat_enabled: "聊天可用",
+          copilot_plan: "Copilot 计划",
+          organization_login_list: "组织登录列表",
+          organization_list: "组织列表",
+          quota_reset_date: "配额重置日期",
+          quota_reset_date_utc: "配额重置 UTC",
+          quota_snapshots: "配额快照",
+          chat: "聊天",
+          completions: "补全",
+          premium_interactions: "高级交互",
+          entitlement: "总配额",
+          overage_count: "超量次数",
+          overage_permitted: "允许超量",
+          percent_remaining: "剩余百分比",
+          quota_id: "配额 ID",
+          quota_remaining: "剩余配额",
+          remaining: "剩余",
+          unlimited: "是否无限",
+          timestamp_utc: "时间戳 UTC",
+        };
         const entries = Object.entries(obj)
           .map(([k, v]) => {
-            const label = k.replace(/_/g, " ");
+            const label = labelMap[k] || k.replace(/_/g, " ");
             let val;
             if (Array.isArray(v)) {
-              val = `<span class="text-slate-400">[ ${v.length} items ]</span>`;
+              val = `<span class="text-slate-400">[ ${v.length} 项 ]</span>`;
             } else if (typeof v === "object") {
               val = formatObject(v);
             } else if (typeof v === "boolean") {
-              val = `<span class="${v ? "text-green-300" : "text-red-300"} font-semibold">${v}</span>`;
+              val = `<span class="${v ? "text-green-300" : "text-red-300"} font-semibold">${v ? "是" : "否"}</span>`;
             } else {
               val = `<span class="text-blue-200">${JSON.stringify(v)}</span>`;
             }
             return `
-              <div class="flex flex-col gap-1">
-                <span class="text-slate-300 text-sm">${label}:</span>
-                <div class="pl-3 text-sm">${val}</div>
+              <div class="flex flex-col gap-1 border border-white/5 rounded-lg p-2">
+                <span class="text-slate-300 text-sm">${label}</span>
+                <div class="pl-1 text-sm">${val}</div>
               </div>
             `;
           })
           .join("");
-        return `<div class="space-y-2">${entries}</div>`;
+        return `<div class="grid md:grid-cols-2 gap-2">${entries}</div>`;
       }
 
       function renderDetailed(data) {
@@ -260,6 +345,18 @@
         } catch (e) {
           console.warn("账户列表获取失败:", e);
         }
+      }
+
+      async function addAccount(githubToken, accountType) {
+        const res = await fetch(ACCOUNT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ githubToken, accountType }),
+        });
+        if (!res.ok) {
+          throw new Error(`添加失败：${res.status} ${res.statusText}`);
+        }
+        return res.json();
       }
 
       async function fetchUsage() {
@@ -326,9 +423,37 @@
         createIcons();
       }
 
+      function initModal() {
+        const close = () => modal.classList.remove("active");
+        document.getElementById("modal-close").onclick = close;
+        document.getElementById("modal-cancel").onclick = close;
+        modal.onclick = (e) => {
+          if (e.target === modal) close();
+        };
+        document.getElementById("modal-submit").onclick = async () => {
+          const token = document.getElementById("token-input").value.trim();
+          const type = document.getElementById("account-type").value;
+          const errLabel = document.getElementById("modal-error");
+          errLabel.textContent = "";
+          if (!token) {
+            errLabel.textContent = "Token 不能为空";
+            return;
+          }
+          try {
+            await addAccount(token, type);
+            close();
+            await fetchAll();
+          } catch (err) {
+            errLabel.textContent = err.message || "添加失败";
+          }
+        };
+        addAccountBtn.onclick = () => modal.classList.add("active");
+      }
+
       refreshBtn.onclick = fetchAll;
       endpointLabel.textContent = USAGE_URL;
       fetchAll();
+      initModal();
     </script>
   </body>
 </html>
