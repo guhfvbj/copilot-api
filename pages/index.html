@@ -182,10 +182,7 @@
       }
 
       function renderAccountSelector() {
-        if (!state.accounts.length) {
-          accountSelectorSlot.innerHTML = "";
-          return;
-        }
+        const count = state.accounts.length;
         const options = state.accounts
           .map(
             (acc) =>
@@ -193,14 +190,28 @@
           )
           .join("");
         accountSelectorSlot.innerHTML = `
-          <label class="flex items-center gap-2 text-sm text-slate-200">
-            <i class="lucide lucide-users h-4 w-4 text-cyan-300"></i>
-            <span>选择账号</span>
-            <select id="account-select" class="bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
-              <option value="">自动(首账号)</option>
-              ${options}
-            </select>
-          </label>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <i class="lucide lucide-users h-4 w-4 text-cyan-300"></i>
+              <span class="text-sm text-slate-200">账号池</span>
+              <span class="pill text-xs">共 ${count} 个</span>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-slate-200">
+              <span>选择账号</span>
+              <select id="account-select" class="bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                <option value="">自动(首账号)</option>
+                ${options}
+              </select>
+            </label>
+            <div class="flex flex-wrap gap-2 text-xs text-slate-300">
+              ${state.accounts
+                .map(
+                  (acc) =>
+                    `<span class="pill">${acc.id}${acc.accountType ? ` · ${acc.accountType}` : ""}</span>`,
+                )
+                .join("")}
+            </div>
+          </div>
         `;
         const select = document.getElementById("account-select");
         select.onchange = () => {
