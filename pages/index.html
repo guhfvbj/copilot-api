@@ -13,46 +13,52 @@
     <style>
       body {
         font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
-        background: radial-gradient(circle at 20% 20%, #1f2937 0, #0f172a 45%, #0b1223 100%);
-        color: #e5e7eb;
+        background: #f8fafc;
+        color: #334155;
       }
       .card {
         backdrop-filter: blur(12px);
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(226, 232, 240, 0.8);
         border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       }
       .glass {
         backdrop-filter: blur(14px);
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.12));
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+        border: 1px solid rgba(255, 255, 255, 0.5);
       }
       .progress {
         height: 10px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
+        background: #e2e8f0;
         overflow: hidden;
       }
       .progress > div {
         height: 100%;
         border-radius: 999px;
         transition: width 0.4s ease;
-        background: linear-gradient(90deg, #22d3ee, #8b5cf6);
+        background: linear-gradient(90deg, #06b6d4, #8b5cf6);
       }
       .pill {
         padding: 4px 10px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
+        background: #f1f5f9;
         font-size: 12px;
-        color: #cbd5f5;
+        color: #475569;
       }
       .btn {
-        background: linear-gradient(135deg, #22d3ee, #8b5cf6);
-        color: #0b1223;
-        font-weight: 700;
+        background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+        color: #ffffff;
+        font-weight: 600;
         border-radius: 12px;
         padding: 10px 16px;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+        transition: all 0.2s;
+      }
+      .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
       }
       .btn:active {
         transform: translateY(1px);
@@ -63,7 +69,7 @@
       .modal {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.45);
+        background: rgba(0, 0, 0, 0.2);
         display: none;
         align-items: center;
         justify-content: center;
@@ -80,13 +86,13 @@
       <header class="flex flex-col gap-2 card p-6">
         <div class="flex items-center gap-3">
           <div class="p-2 rounded-xl glass">
-            <i class="lucide lucide-gauge h-6 w-6 text-cyan-300"></i>
+            <i class="lucide lucide-gauge h-6 w-6 text-blue-500"></i>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-white">Copilot 用量面板</h1>
-            <p class="text-sm text-slate-300">
-              前端与接口同域，直接调用 <span class="mono text-cyan-200">/usage</span> 与
-              <span class="mono text-cyan-200">/token</span>
+            <h1 class="text-2xl font-bold text-slate-800">Copilot 用量面板</h1>
+            <p class="text-sm text-slate-500">
+              前端与接口同域，直接调用 <span class="mono text-blue-600">/usage</span> 与
+              <span class="mono text-blue-600">/token</span>
             </p>
           </div>
         </div>
@@ -95,10 +101,10 @@
       <section class="card p-5 space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
           <div class="flex items-center gap-2">
-            <i class="lucide lucide-server h-5 w-5 text-cyan-300"></i>
+            <i class="lucide lucide-server h-5 w-5 text-blue-500"></i>
             <div>
               <div class="text-xs uppercase tracking-wide text-slate-400">请求地址</div>
-              <div class="mono text-sm text-cyan-100" id="current-endpoint"></div>
+              <div class="mono text-sm text-slate-700" id="current-endpoint"></div>
             </div>
           </div>
           <div class="flex-1"></div>
@@ -120,26 +126,26 @@
     </div>
 
     <div id="add-modal" class="modal">
-      <div class="card p-6 w-full max-w-lg space-y-4">
+      <div class="card p-6 w-full max-w-lg space-y-4 bg-white">
         <div class="flex items-center justify-between">
-          <div class="text-lg font-semibold text-white">手动添加账号</div>
-          <button id="modal-close" class="text-slate-300 hover:text-white">
+          <div class="text-lg font-semibold text-slate-800">手动添加账号</div>
+          <button id="modal-close" class="text-slate-400 hover:text-slate-600">
             <i class="lucide lucide-x h-5 w-5"></i>
           </button>
         </div>
         <div class="space-y-2">
-          <label class="text-sm text-slate-300">GitHub Token</label>
+          <label class="text-sm text-slate-600">GitHub Token</label>
           <input
             id="token-input"
-            class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="ghp_xxx"
           />
         </div>
         <div class="space-y-2">
-          <label class="text-sm text-slate-300">账号类型</label>
+          <label class="text-sm text-slate-600">账号类型</label>
           <select
             id="account-type"
-            class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="individual">individual</option>
             <option value="business">business</option>
@@ -147,12 +153,12 @@
           </select>
         </div>
         <div class="flex justify-end gap-2">
-          <button id="modal-cancel" class="px-4 py-2 text-sm text-slate-200">取消</button>
+          <button id="modal-cancel" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">取消</button>
           <button id="modal-submit" class="btn flex items-center gap-2">
             <i class="lucide lucide-save h-4 w-4"></i><span>提交</span>
           </button>
         </div>
-        <div id="modal-error" class="text-sm text-red-300"></div>
+        <div id="modal-error" class="text-sm text-red-500"></div>
       </div>
     </div>
 
@@ -192,18 +198,18 @@
         accountSelectorSlot.innerHTML = `
           <div class="flex flex-col gap-2">
             <div class="flex items-center gap-2">
-              <i class="lucide lucide-users h-4 w-4 text-cyan-300"></i>
-              <span class="text-sm text-slate-200">账号池</span>
+              <i class="lucide lucide-users h-4 w-4 text-blue-500"></i>
+              <span class="text-sm text-slate-600">账号池</span>
               <span class="pill text-xs">共 ${count} 个</span>
             </div>
-            <label class="flex items-center gap-2 text-sm text-slate-200">
+            <label class="flex items-center gap-2 text-sm text-slate-600">
               <span>选择账号</span>
-              <select id="account-select" class="bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+              <select id="account-select" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">自动(首账号)</option>
                 ${options}
               </select>
             </label>
-            <div class="flex flex-wrap gap-2 text-xs text-slate-300">
+            <div class="flex flex-wrap gap-2 text-xs text-slate-500">
               ${state.accounts
                 .map(
                   (acc) =>
@@ -222,12 +228,12 @@
 
       function renderError(message) {
         return `
-          <div class="card border border-red-500/40 bg-red-500/10 p-5">
-            <div class="flex items-center gap-2 text-red-300 font-semibold">
+          <div class="card border border-red-200 bg-red-50 p-5">
+            <div class="flex items-center gap-2 text-red-600 font-semibold">
               <i class="lucide lucide-alert-triangle h-5 w-5"></i>
               <span>请求失败</span>
             </div>
-            <div class="mt-2 text-sm text-red-200">${message}</div>
+            <div class="mt-2 text-sm text-red-500">${message}</div>
           </div>
         `;
       }
@@ -235,7 +241,7 @@
       function renderSpinner() {
         return `
           <div class="card p-6 flex justify-center">
-            <div class="animate-spin h-10 w-10 rounded-full border-4 border-slate-700 border-t-cyan-300"></div>
+            <div class="animate-spin h-10 w-10 rounded-full border-4 border-slate-200 border-t-blue-500"></div>
           </div>
         `;
       }
@@ -250,13 +256,13 @@
         return `
           <div class="card p-4 space-y-3">
             <div class="flex justify-between items-center">
-              <div class="text-sm text-slate-300 capitalize">${title.replace(/_/g, " ")}</div>
+              <div class="text-sm text-slate-600 capitalize">${title.replace(/_/g, " ")}</div>
               <span class="pill">${unlimited ? "无限" : percentUsed.toFixed(1) + "% 已用"}</span>
             </div>
             <div class="progress">
               <div style="width:${unlimited ? 100 : percentUsed}%;" class="bg-gradient-to-r ${color}"></div>
             </div>
-            <div class="flex justify-between text-xs text-slate-400 mono">
+            <div class="flex justify-between text-xs text-slate-500 mono">
               <span>${used === "∞" ? "∞" : Number(used).toLocaleString()} / ${unlimited ? "∞" : entitlement.toLocaleString()}</span>
             </div>
           </div>
@@ -275,12 +281,12 @@
         if (obj === null || typeof obj !== "object") {
           if (typeof obj === "string") {
             const formatted = formatMaybeDate(obj);
-            return `<span class="text-cyan-200">${formatted ?? obj}</span>`;
+            return `<span class="text-blue-600">${formatted ?? obj}</span>`;
           }
           if (typeof obj === "number") {
-            return `<span class="text-cyan-200">${obj}</span>`;
+            return `<span class="text-blue-600">${obj}</span>`;
           }
-          return `<span class="text-cyan-200">${String(obj)}</span>`;
+          return `<span class="text-blue-600">${String(obj)}</span>`;
         }
         const labelMap = {
           account: "账号",
@@ -317,20 +323,20 @@
             } else if (typeof v === "object") {
               val = formatObject(v);
             } else if (typeof v === "boolean") {
-              val = `<span class="${v ? "text-green-300" : "text-red-300"} font-semibold">${v ? "是" : "否"}</span>`;
+              val = `<span class="${v ? "text-green-600" : "text-red-600"} font-semibold">${v ? "是" : "否"}</span>`;
             } else {
               if (typeof v === "number" && k.includes("percent")) {
-                val = `<span class="text-blue-200">${v.toFixed(1)}%</span>`;
+                val = `<span class="text-blue-600">${v.toFixed(1)}%</span>`;
               } else if (typeof v === "string") {
                 const formatted = formatMaybeDate(v);
-                val = `<span class="text-blue-200">${formatted ?? v}</span>`;
+                val = `<span class="text-blue-600">${formatted ?? v}</span>`;
               } else {
-                val = `<span class="text-blue-200">${String(v)}</span>`;
+                val = `<span class="text-blue-600">${String(v)}</span>`;
               }
             }
             return `
-              <div class="flex flex-col gap-1 border border-white/5 rounded-lg p-2">
-                <span class="text-slate-300 text-sm">${label}</span>
+              <div class="flex flex-col gap-1 border border-slate-200 rounded-lg p-2">
+                <span class="text-slate-500 text-sm">${label}</span>
                 <div class="pl-1 text-sm">${val}</div>
               </div>
             `;
@@ -342,11 +348,11 @@
       function renderDetailed(data) {
         return `
           <div class="card p-5 space-y-3">
-            <div class="flex items-center gap-2 text-slate-200">
-              <i class="lucide lucide-file-text h-5 w-5 text-cyan-300"></i>
+            <div class="flex items-center gap-2 text-slate-700">
+              <i class="lucide lucide-file-text h-5 w-5 text-blue-500"></i>
               <span class="font-semibold">完整数据</span>
             </div>
-            <div class="mono text-xs text-slate-200 space-y-2">${formatObject(data)}</div>
+            <div class="mono text-xs text-slate-600 space-y-2">${formatObject(data)}</div>
           </div>
         `;
       }
@@ -447,7 +453,7 @@
         }
         if (state.data) {
           const accountInfo = state.data.account
-            ? `<div class="text-sm text-slate-300">当前账号：<span class="mono text-cyan-200">${state.data.account}</span></div>`
+            ? `<div class="text-sm text-slate-500">当前账号：<span class="mono text-blue-600">${state.data.account}</span></div>`
             : "";
           contentArea.innerHTML = `
             <div class="flex flex-col lg:flex-row gap-4">
@@ -462,9 +468,9 @@
           return;
         }
         contentArea.innerHTML = `
-          <div class="card p-6 text-center text-slate-300">
+          <div class="card p-6 text-center text-slate-500">
             <div class="flex justify-center mb-2">
-              <i class="lucide lucide-info h-6 w-6 text-cyan-300"></i>
+              <i class="lucide lucide-info h-6 w-6 text-blue-500"></i>
             </div>
             <p>点击右上角「刷新」获取最新用量</p>
           </div>
