@@ -184,15 +184,6 @@
           accountId: "",
         };
 
-        const isMixedContent = (url) => {
-          try {
-            const u = new URL(url);
-            return window.location.protocol === "https:" && u.protocol === "http:";
-          } catch {
-            return false;
-          }
-        };
-
         const getBaseUrl = (usageUrl) => {
           const url = new URL(usageUrl);
           return `${url.protocol}//${url.host}`;
@@ -370,8 +361,14 @@
             const accountInfo = state.data.account
               ? `<div class="mb-3 text-sm" style="color: var(--color-gray);">当前账号：${state.data.account}</div>`
               : "";
+            const endpointInfo = `
+              <div class="mb-2 text-xs font-mono" style="color: var(--color-gray);">
+                当前请求地址：<span style="color: var(--color-blue-accent);">${endpointUrlInput.value.trim()}</span>
+              </div>
+            `;
             contentArea.innerHTML = `
               ${accountSelector}
+              ${endpointInfo}
               ${accountInfo}
               ${renderUsageQuotas(state.data.quota_snapshots)}
               ${renderDetailedData(state.data)}
@@ -409,14 +406,6 @@
           const url = endpointUrlInput.value.trim();
           if (!url) {
             state.error = "Endpoint 不能为空";
-            state.isLoading = false;
-            render();
-            return;
-          }
-          if (isMixedContent(url)) {
-            state.error =
-              "当前页面为 HTTPS，目标为 HTTP，浏览器已阻止混合内容。请使用 HTTPS Endpoint，或将页面保存到本地以 HTTP 打开。";
-            state.data = null;
             state.isLoading = false;
             render();
             return;
