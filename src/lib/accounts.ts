@@ -43,6 +43,12 @@ export async function loadAccountsFromDisk(): Promise<void> {
   }
 }
 
+async function ensureAccountsLoadedFromDisk() {
+  if (state.accounts.length === 0) {
+    await loadAccountsFromDisk()
+  }
+}
+
 export async function persistAccounts(): Promise<void> {
   const payload = JSON.stringify(
     state.accounts.map((acc) => toStoredAccount(acc)),
@@ -170,6 +176,7 @@ export async function addAccountWithToken(
   accountType: string,
   { showToken }: { showToken?: boolean } = {},
 ): Promise<Account> {
+  await ensureAccountsLoadedFromDisk()
   const user = await getGitHubUser(githubToken)
   const account: Account = {
     id: user.login || `account-${randomUUID().slice(0, 8)}`,
@@ -192,6 +199,7 @@ export async function addAccountInteractive(
   accountType: string,
   { showToken }: { showToken?: boolean } = {},
 ): Promise<Account> {
+  await ensureAccountsLoadedFromDisk()
   consola.info("Starting GitHub device login for new account")
   const response = await getDeviceCode()
   consola.info(
