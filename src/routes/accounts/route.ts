@@ -1,6 +1,10 @@
 import { Hono } from "hono"
 
-import { addAccountWithToken, ensureAccountReady } from "~/lib/accounts"
+import {
+  addAccountWithToken,
+  ensureAccountReady,
+  ensureAccountsInitialized,
+} from "~/lib/accounts"
 import { forwardError } from "~/lib/error"
 import { cacheVSCodeVersion } from "~/lib/utils"
 import { state } from "~/lib/state"
@@ -31,9 +35,9 @@ accountRoutes.post("/", async (c) => {
       return c.json({ error: "githubToken is required" }, 400)
     }
 
-    if (!state.vsCodeVersion) {
-      await cacheVSCodeVersion()
-    }
+    // 确保基础环境就绪，防止首次添加时状态缺失
+    await ensureAccountsInitialized(body.accountType ?? "individual")
+    if (!state.vsCodeVersion) await cacheVSCodeVersion()
 
     const account = await addAccountWithToken(
       body.githubToken,
