@@ -18,11 +18,17 @@ export interface ApiKey {
   createdAt: number
 }
 
+export interface AccountUsageSnapshot {
+  usage: import("~/services/github/get-copilot-usage").CopilotUsageResponse
+  fetchedAt: number
+}
+
 export interface State {
   accounts: Array<Account>
   conversationAccounts: Map<string, string>
   apiKeys: Map<string, ApiKey>
   accountRotationIndex: number
+  accountUsage: Map<string, AccountUsageSnapshot>
 
   vsCodeVersion?: string
 
@@ -41,6 +47,7 @@ export const state: State = {
   conversationAccounts: new Map(),
   apiKeys: new Map(),
   accountRotationIndex: -1,
+  accountUsage: new Map(),
   manualApprove: false,
   rateLimitWait: false,
   showToken: false,

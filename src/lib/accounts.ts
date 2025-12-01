@@ -10,6 +10,11 @@ import { getDeviceCode } from "~/services/github/get-device-code"
 import { getGitHubUser } from "~/services/github/get-user"
 import { pollAccessToken } from "~/services/github/poll-access-token"
 import { getModels } from "~/services/copilot/get-models"
+import {
+  getCopilotUsage,
+  type CopilotUsageResponse,
+  type QuotaDetail,
+} from "~/services/github/get-copilot-usage"
 
 interface StoredAccount {
   id: string
@@ -71,6 +76,35 @@ function getNextAccountRoundRobin(): Account {
     state.accountRotationIndex += 1
   }
   return state.accounts[state.accountRotationIndex]!
+}
+
+const USAGE_CACHE_TTL_MS = 60_000
+
+async function getAccountUsage(
+  account: Account,
+  vsCodeVersion: string,
+): Promise<CopilotUsageResponse> {
+  const cached = state.accountUsage.get(account.id)
+  if (cached && Date.now() - cached.fetchedAt < USAGE_CACHE_TTL_MS) {
+    return cached.usage
+  }
+  const usage = await getCopilotUsage(account, vsCodeVersion)
+  state.accountUsage.set(account.id, { usage, fetchedAt: Date.now() })
+  return usage
+}
+
+const hasPremiumBalance = (usage: CopilotUsageResponse | undefined) => {
+  if (!usage) return false
+  const premium = (usage.quota_snapshots?.premium_interactions ?? null) as
+    | QuotaDetail
+    | null
+  if (!premium) return false
+  if (premium.unlimited) return true
+  const remaining =
+    premium.remaining
+    ?? premium.quota_remaining
+    ?? 0
+  return remaining > 0
 }
 
 export function setConversationAccount(
@@ -237,7 +271,7 @@ export async function ensureAccountsInitialized(
 }
 
 export async function pickAccountForConversation(
-  conversationId: string | undefined,
+  _conversationId: string | undefined,
   requestedAccountId?: string,
   requestedModelId?: string,
 ): Promise<Account> {
@@ -246,45 +280,36 @@ export async function pickAccountForConversation(
     throw new Error("No accounts available. Please add an account first.")
   }
 
-  let account: Account | undefined
-
-  if (requestedAccountId) {
-    account = state.accounts.find((a) => a.id === requestedAccountId)
-  }
-
-  if (!account && conversationId) {
-    const pinned = state.conversationAccounts.get(conversationId)
-    if (pinned) account = state.accounts.find((a) => a.id === pinned)
-  }
-
   const supportsModel = (acc: Account) => {
     if (!requestedModelId) return true
     return acc.models?.data.some((m) => m.id === requestedModelId) ?? false
   }
 
-  if (account) {
-    await ensureAccountReady(account)
-    if (supportsModel(account)) {
-      if (conversationId) setConversationAccount(conversationId, account.id)
-      return account
+  const hasBalance = async (acc: Account) => {
+    await ensureAccountReady(acc)
+    const usage = await getAccountUsage(acc, state.vsCodeVersion!)
+    return hasPremiumBalance(usage)
+  }
+
+  // 优先使用显式指定账号（且有余额）
+  if (requestedAccountId) {
+    const target = state.accounts.find((a) => a.id === requestedAccountId)
+    if (target && supportsModel(target) && (await hasBalance(target))) {
+      return target
     }
   }
 
-  // 预热模型列表，后续选择才有依据
-  for (const acc of state.accounts) {
-    await ensureAccountReady(acc)
-  }
-
-  // 轮询选择下一个账号（可按模型过滤）
+  // 轮询查找有余额的账号
   for (let i = 0; i < state.accounts.length; i++) {
     const candidate = getNextAccountRoundRobin()
     if (!supportsModel(candidate)) continue
-    if (conversationId) setConversationAccount(conversationId, candidate.id)
-    return candidate
+    if (await hasBalance(candidate)) {
+      return candidate
+    }
   }
 
-  // 兜底：如果全部不符合模型要求，返回第一个账号
-  const fallback = state.accounts[0]
-  if (conversationId) setConversationAccount(conversationId, fallback.id)
+  // 兜底：全部耗尽时，返回支持模型的第一个账号（可能触发上游限额错误）
+  const fallback = state.accounts.find((a) => supportsModel(a)) ?? state.accounts[0]
+  await ensureAccountReady(fallback)
   return fallback
 }
