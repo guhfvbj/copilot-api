@@ -252,3 +252,37 @@ export async function ensureAccountsInitialized(
 
   await addAccountInteractive(accountType, { showToken: options.showToken })
 }
+
+export async function pickAccountForConversation(
+  conversationId: string | undefined,
+  requestedAccountId?: string,
+): Promise<Account> {
+  if (state.accounts.length === 0) {
+    await ensureAccountsLoadedFromDisk()
+  }
+  if (state.accounts.length === 0) {
+    throw new Error("No accounts available. Please add an account first.")
+  }
+
+  let account: Account | undefined
+
+  if (requestedAccountId) {
+    account = state.accounts.find((a) => a.id === requestedAccountId)
+  }
+
+  if (!account && conversationId) {
+    const pinned = state.conversationAccounts.get(conversationId)
+    if (pinned) account = state.accounts.find((a) => a.id === pinned)
+  }
+
+  if (!account) {
+    account = getRandomAccount()
+  }
+
+  if (conversationId) {
+    setConversationAccount(conversationId, account.id)
+  }
+
+  await ensureAccountReady(account)
+  return account
+}

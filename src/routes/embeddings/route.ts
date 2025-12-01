@@ -22,8 +22,12 @@ embeddingRoutes.post("/", async (c) => {
     const conversationId =
       c.req.header("x-conversation-id")
       ?? apiKey?.key
+    const requestedAccountId = c.req.header("x-account-id")
     const payload = await c.req.json<EmbeddingRequest>()
-    const account = await pickAccountForConversation(conversationId)
+    const account = await pickAccountForConversation(
+      conversationId,
+      requestedAccountId,
+    )
     const response = await createEmbeddings(
       account,
       payload,

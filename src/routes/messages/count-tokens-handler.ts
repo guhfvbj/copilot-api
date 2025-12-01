@@ -19,8 +19,12 @@ export async function handleCountTokens(c: Context) {
     const anthropicPayload = await c.req.json<AnthropicMessagesPayload>()
     const conversationId =
       c.req.header("x-conversation-id") ?? anthropicPayload.metadata?.user_id
+    const requestedAccountId = c.req.header("x-account-id")
 
-    const account = await pickAccountForConversation(conversationId)
+    const account = await pickAccountForConversation(
+      conversationId,
+      requestedAccountId,
+    )
 
     const openAIPayload = translateToOpenAI(anthropicPayload)
 

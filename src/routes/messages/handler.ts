@@ -36,8 +36,12 @@ export async function handleCompletion(c: Context) {
     c.req.header("x-conversation-id")
     ?? anthropicPayload.metadata?.user_id
     ?? apiKey?.key
+  const requestedAccountId = c.req.header("x-account-id")
 
-  const account = await pickAccountForConversation(conversationId)
+  const account = await pickAccountForConversation(
+    conversationId,
+    requestedAccountId,
+  )
   await checkRateLimit(state, account.id)
   consola.debug("Anthropic request payload:", JSON.stringify(anthropicPayload))
 

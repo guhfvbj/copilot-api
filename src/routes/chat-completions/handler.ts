@@ -26,8 +26,12 @@ export async function handleCompletion(c: Context) {
   let payload = await c.req.json<ChatCompletionsPayload>()
   const conversationId =
     c.req.header("x-conversation-id") ?? payload.user ?? apiKey?.key
+  const requestedAccountId = c.req.header("x-account-id")
 
-  const account = await pickAccountForConversation(conversationId)
+  const account = await pickAccountForConversation(
+    conversationId,
+    requestedAccountId,
+  )
   await checkRateLimit(state, account.id)
   consola.debug("Request payload:", JSON.stringify(payload).slice(-400))
   consola.info(
