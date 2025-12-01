@@ -3,624 +3,269 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Copilot 监控控制台</title>
+    <title>Copilot 用量面板</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://unpkg.com/lucide-react@0.378.0/dist/umd/lucide.min.js"></script>
-    
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['"Inter"', '"Noto Sans SC"', "sans-serif"],
-              mono: ['"JetBrains Mono"', "monospace"],
-            },
-            colors: {
-              glass: "rgba(255, 255, 255, 0.7)",
-              glassBorder: "rgba(255, 255, 255, 0.5)",
-            },
-            animation: {
-              'float': 'float 6s ease-in-out infinite',
-              'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              'scale-in': 'scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            },
-            keyframes: {
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
-              },
-              slideUp: {
-                '0%': { transform: 'translateY(20px)', opacity: '0' },
-                '100%': { transform: 'translateY(0)', opacity: '1' },
-              },
-              scaleIn: {
-                '0%': { transform: 'scale(0.95)', opacity: '0' },
-                '100%': { transform: 'scale(1)', opacity: '1' },
-              }
-            }
-          },
-        },
-      };
-    </script>
     <style>
       body {
-        background: #f0f4f8;
-        background-image: 
-          radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-          radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-          radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-        background-attachment: fixed;
-        background-size: cover;
-        color: #1e293b;
-        -webkit-font-smoothing: antialiased;
+        font-family: "Inter", "Noto Sans SC", system-ui, sans-serif;
+        background: radial-gradient(circle at 20% 20%, #e0f2fe 0, #f8fafc 40%, #f4f7fb 100%);
+        color: #0f172a;
       }
-      
-      /* Glassmorphism Utilities */
-      .glass-panel {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+      .card {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 18px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
       }
-      
-      .glass-card {
-        background: rgba(255, 255, 255, 0.6);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      .pill {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        font-size: 12px;
+        color: #1f2937;
       }
-      
-      .glass-card:hover {
-        background: rgba(255, 255, 255, 0.9);
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.1);
-        border-color: rgba(59, 130, 246, 0.3);
+      .mono {
+        font-family: "JetBrains Mono", monospace;
       }
-
-      /* Circular Progress */
-      .circle-chart { width: 80px; height: 80px; }
-      .circle-bg { fill: none; stroke: #e2e8f0; stroke-width: 6; }
-      .circle-progress { 
-        fill: none; 
-        stroke-width: 6; 
-        stroke-linecap: round; 
-        transition: stroke-dasharray 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: rotate(-90deg);
-        transform-origin: 50% 50%;
-      }
-
-      /* Scrollbar */
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.8); }
-
-      /* Animation Stagger Helper */
-      .stagger-1 { animation-delay: 0.1s; }
-      .stagger-2 { animation-delay: 0.2s; }
-      .stagger-3 { animation-delay: 0.3s; }
-      .stagger-4 { animation-delay: 0.4s; }
-
-      /* Background decorative blobs */
-      .blob {
-        position: absolute;
-        filter: blur(80px);
-        z-index: -1;
-        opacity: 0.6;
-        animation: float 10s ease-in-out infinite;
-      }
-      .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #e0e7ff; animation-delay: 0s; }
-      .blob-2 { top: 20%; right: -10%; width: 400px; height: 400px; background: #fce7f3; animation-delay: -2s; }
-      .blob-3 { bottom: -10%; left: 20%; width: 600px; height: 600px; background: #ccfbf1; animation-delay: -4s; }
     </style>
   </head>
-  <body class="min-h-screen relative overflow-x-hidden text-slate-800">
-    
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
-
-    <nav class="sticky top-0 z-50 glass-panel border-b-0 mb-6">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-18 items-center py-3">
-          <div class="flex items-center gap-4">
-            <div class="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30">
-              <i class="lucide lucide-layout-dashboard h-6 w-6 text-white"></i>
-            </div>
-            <div>
-              <h1 class="font-bold text-slate-800 text-xl tracking-tight">Copilot 监控台</h1>
-              <div class="flex items-center gap-2">
-                <span class="relative flex h-2 w-2">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                <span class="text-xs text-slate-500 font-medium" id="status-text">系统运行正常</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="flex items-center gap-3">
-            <div id="account-selector-container" class="hidden md:block transition-all"></div>
-            
-            <button id="refresh-btn" class="p-2.5 text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-xl transition-all active:scale-95 group" title="刷新数据">
-              <i class="lucide lucide-refresh-cw h-5 w-5 group-hover:rotate-180 transition-transform duration-500"></i>
-            </button>
-            
-            <button id="add-account-btn" class="relative overflow-hidden bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-95">
-              <i class="lucide lucide-plus-circle h-4 w-4"></i>
-              <span class="hidden sm:inline">添加账号</span>
-            </button>
-          </div>
+  <body class="min-h-screen">
+    <header class="card mx-auto max-w-6xl mt-6 px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
+          <i class="lucide lucide-layout-dashboard h-5 w-5"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold">Copilot 用量面板</h1>
+          <p class="text-sm text-slate-500">同域调用 /usage /token /accounts</p>
         </div>
       </div>
-    </nav>
+      <div class="flex items-center gap-3">
+        <div id="account-selector-container" class="hidden md:block"></div>
+        <button id="add-account-btn" class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm flex items-center gap-1">
+          <i class="lucide lucide-plus h-4 w-4"></i><span>添加账号</span>
+        </button>
+        <button id="refresh-btn" class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600">
+          <i class="lucide lucide-refresh-cw h-5 w-5"></i>
+        </button>
+      </div>
+    </header>
 
-    <div class="md:hidden px-4 mb-6" id="mobile-selector-container"></div>
+    <div class="md:hidden mx-auto max-w-6xl px-4 mt-3" id="mobile-selector-container"></div>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-8">
-      
-      <div class="glass-panel rounded-2xl p-1.5 flex items-center justify-between gap-4 pr-4 animate-slide-up">
-        <div class="flex items-center gap-3 bg-white/50 rounded-xl px-4 py-2 flex-1">
-            <i class="lucide lucide-server h-4 w-4 text-blue-500"></i>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                <span class="text-xs text-slate-500 uppercase font-bold tracking-wider">当前接口</span>
-                <span class="font-mono text-xs sm:text-sm text-slate-700 truncate" id="current-endpoint">...</span>
-            </div>
+    <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div class="card p-4 flex items-center gap-3">
+        <i class="lucide lucide-server h-5 w-5 text-blue-600"></i>
+        <div>
+          <div class="text-xs text-slate-500 uppercase">请求地址</div>
+          <div id="current-endpoint" class="mono text-sm text-slate-800 truncate"></div>
         </div>
       </div>
 
-      <div id="content-area" class="min-h-[400px]">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
-            <div class="h-48 bg-white/40 rounded-2xl"></div>
-            <div class="h-48 bg-white/40 rounded-2xl"></div>
-            <div class="h-48 bg-white/40 rounded-2xl"></div>
-        </div>
+      <div id="content-area" class="min-h-[320px] card p-6">
+        <div class="text-center text-slate-500">正在加载...</div>
       </div>
-
     </main>
 
-    <div id="add-modal" class="fixed inset-0 z-[100] hidden" role="dialog" aria-modal="true">
-      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
-      <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4">
-          <div class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:w-full sm:max-w-lg opacity-0 scale-95" id="modal-panel">
-            
-            <div class="absolute top-0 right-0 pt-4 pr-4">
-                <button id="modal-close-icon" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <i class="lucide lucide-x h-6 w-6"></i>
-                </button>
+    <!-- 添加账号弹窗 -->
+    <div id="add-modal" class="fixed inset-0 z-50 hidden">
+      <div class="absolute inset-0 bg-slate-900/60"></div>
+      <div class="relative z-10 flex items-center justify-center min-h-screen px-4">
+        <div class="card w-full max-w-lg p-6 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-bold">添加账号</h3>
+            <button id="modal-close" class="text-slate-400 hover:text-slate-700">
+              <i class="lucide lucide-x h-5 w-5"></i>
+            </button>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="text-sm text-slate-600">GitHub Token</label>
+              <input id="token-input" class="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm mono" placeholder="ghp_xxx" />
             </div>
-
-            <div class="p-8">
-              <div class="flex items-center gap-4 mb-6">
-                <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-                  <i class="lucide lucide-key-round h-6 w-6"></i>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900">接入新账号</h3>
-                    <p class="text-sm text-slate-500">请输入 GitHub Token 以开始监控</p>
-                </div>
-              </div>
-
-              <div class="space-y-5">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">GitHub Token</label>
-                    <div class="relative">
-                        <i class="lucide lucide-lock absolute left-3 top-3 h-4 w-4 text-slate-400"></i>
-                        <input id="token-input" type="text" class="w-full pl-10 rounded-xl border-slate-200 border-2 bg-slate-50 focus:bg-white py-2.5 px-3 font-mono text-sm focus:border-blue-500 focus:ring-0 transition-colors outline-none" placeholder="ghp_xxxxxxxxxxxx">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">账号类型</label>
-                    <div class="relative">
-                        <select id="account-type" class="w-full appearance-none rounded-xl border-slate-200 border-2 bg-slate-50 py-2.5 px-3 pr-8 focus:border-blue-500 focus:outline-none transition-colors text-sm font-medium text-slate-700">
-                            <option value="individual">Individual (个人版)</option>
-                            <option value="business">Business (商业版)</option>
-                            <option value="enterprise">Enterprise (企业版)</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                            <i class="lucide lucide-chevron-down h-4 w-4"></i>
-                        </div>
-                    </div>
-                </div>
-              </div>
-              
-              <div id="modal-error" class="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg hidden flex items-center gap-2">
-                <i class="lucide lucide-alert-circle h-4 w-4"></i>
-                <span id="modal-error-text"></span>
-              </div>
-
-              <div class="mt-8 flex gap-3">
-                <button id="modal-cancel" type="button" class="flex-1 rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all">取消</button>
-                <button id="modal-submit" type="button" class="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all">确认提交</button>
-              </div>
+            <div>
+              <label class="text-sm text-slate-600">账号类型</label>
+              <select id="account-type" class="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm">
+                <option value="individual">individual</option>
+                <option value="business">business</option>
+                <option value="enterprise">enterprise</option>
+              </select>
             </div>
+            <div id="modal-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></div>
+          </div>
+          <div class="flex gap-2">
+            <button id="modal-cancel" class="flex-1 border border-slate-200 rounded-lg py-2 text-sm">取消</button>
+            <button id="modal-submit" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg py-2 text-sm">提交</button>
           </div>
         </div>
       </div>
     </div>
 
     <script>
-      /** * Constants & State 
-       */
       const BASE = `${window.location.protocol}//${window.location.host}`;
       const USAGE_URL = `${BASE}/usage`;
       const TOKEN_URL = `${BASE}/token`;
       const ACCOUNT_URL = `${BASE}/accounts`;
 
-      const state = {
-        isLoading: false,
-        error: null,
-        data: null,
-        accounts: [],
-        accountId: "",
-      };
+      const state = { isLoading: false, error: null, data: null, accounts: [], accountId: "" };
 
-      /**
-       * Localization Dictionary (CN)
-       */
-      const DICT = {
-        // Categories
-        account: "当前账号",
-        chat: "对话 (Chat)",
-        completions: "代码补全 (Completions)",
-        premium_interactions: "高级交互 (Premium)",
-        
-        // Metrics
-        entitlement: "总配额",
-        remaining: "剩余额度",
-        used: "已使用",
-        percentage: "使用率",
-        
-        // Boolean / Status
-        true: "是",
-        false: "否",
-        unlimited: "无限配额",
-        
-        // Metadata fields
-        public_suggestions: "公共代码建议",
-        ide_chat: "IDE 聊天",
-        platform_chat: "网页端聊天",
-        cli_chat: "命令行聊天",
-        dotcom_chat: "GitHub.com 聊天",
-        access_type_sku: "订阅 SKU",
-        plan_type: "计划类型",
-        copilot_plan: "Copilot 方案",
-        chat_enabled: "聊天功能开启",
-        organization_list: "所属组织",
-        quota_reset_date: "配额重置时间",
-        assigned_date: "授权分配时间"
-      };
-
-      function t(key) {
-        return DICT[key] || key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-      }
-
-      /**
-       * DOM Elements
-       */
       const contentArea = document.getElementById("content-area");
       const refreshBtn = document.getElementById("refresh-btn");
       const addAccountBtn = document.getElementById("add-account-btn");
       const endpointLabel = document.getElementById("current-endpoint");
       const accountSelectorContainer = document.getElementById("account-selector-container");
       const mobileSelectorContainer = document.getElementById("mobile-selector-container");
-      
-      // Modal
-      const modal = document.getElementById("add-modal");
-      const modalBackdrop = document.getElementById("modal-backdrop");
-      const modalPanel = document.getElementById("modal-panel");
-      const modalError = document.getElementById("modal-error");
-      const modalErrorText = document.getElementById("modal-error-text");
 
-      /**
-       * Visual Helpers
-       */
-      function createIcons() {
+      const modal = document.getElementById("add-modal");
+      const modalError = document.getElementById("modal-error");
+
+      const LABELS = {
+        chat: "对话 (Chat)",
+        completions: "补全 (Completions)",
+        premium_interactions: "高级交互 (Premium)",
+        entitlement: "总配额",
+        quota_remaining: "剩余额度",
+        remaining: "剩余额度",
+        percent_remaining: "剩余百分比",
+        quota_reset_date: "重置时间",
+        quota_reset_date_utc: "重置时间 (UTC)",
+        access_type_sku: "套餐 SKU",
+        copilot_plan: "Copilot 方案",
+      };
+
+      const formatDate = (v) => {
+        const d = new Date(v);
+        if (Number.isNaN(d.getTime())) return v;
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      };
+
+      function renderSelector() {
+        const count = state.accounts.length;
+        if (!count) {
+          accountSelectorContainer.innerHTML = "";
+          mobileSelectorContainer.innerHTML = "";
+          return;
+        }
+        const opts = state.accounts
+          .map((a) => `<option value="${a.id}" ${state.accountId === a.id ? "selected" : ""}>${a.id}${a.accountType ? ` (${a.accountType})` : ""}</option>`)
+          .join("");
+        const html = `
+          <div class="flex items-center gap-2">
+            <span class="pill">共 ${count} 个</span>
+            <select id="account-select" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="">自动(首账号)</option>
+              ${opts}
+            </select>
+          </div>`;
+        accountSelectorContainer.innerHTML = html;
+        mobileSelectorContainer.innerHTML = html.replace("account-select", "account-select-mobile");
+        const hook = (id) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.onchange = (e) => {
+            state.accountId = e.target.value;
+            fetchAll();
+          };
+        };
+        hook("account-select");
+        hook("account-select-mobile");
+      }
+
+      function renderError(msg) {
+        contentArea.innerHTML = `
+          <div class="text-center text-red-600 bg-red-50 border border-red-100 rounded-lg py-4">${msg}</div>
+        `;
+      }
+
+      function renderLoading() {
+        contentArea.innerHTML = `<div class="text-center text-slate-500">加载中...</div>`;
+      }
+
+      function renderQuotaCards(quota) {
+        return `
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${Object.entries(quota)
+              .map(([key, detail]) => {
+                const total = detail.entitlement ?? 0;
+                const remaining = detail.quota_remaining ?? detail.remaining ?? 0;
+                const unlimited = detail.unlimited === true || total === 0;
+                const percentRemaining = detail.percent_remaining ?? (total > 0 ? (remaining / total) * 100 : 100);
+                const percentUsed = unlimited ? 0 : 100 - percentRemaining;
+                return `
+                  <div class="card p-4 space-y-2">
+                    <div class="flex justify-between items-center">
+                      <div class="font-semibold">${LABELS[key] || key}</div>
+                      <span class="pill">${unlimited ? "无限" : `${percentUsed.toFixed(1)}% 已用`}</span>
+                    </div>
+                    <div class="text-sm text-slate-500">总配额：${unlimited ? "∞" : total}</div>
+                    <div class="text-sm text-slate-500">剩余：${unlimited ? "∞" : remaining}</div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div class="h-2 bg-gradient-to-r from-blue-500 to-indigo-500" style="width:${unlimited ? 100 : percentUsed}%"></div>
+                    </div>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>`;
+      }
+
+      function renderDetails(data) {
+        const entries = [];
+        for (const [key, val] of Object.entries(data)) {
+          if (key === "quota_snapshots") continue;
+          if (key === "account") continue;
+          let display = val;
+          if (typeof val === "boolean") display = val ? "是" : "否";
+          if (typeof val === "number" && key.includes("percent")) display = `${val.toFixed(1)}%`;
+          if (typeof val === "string" && val.match(/\d{4}-\d{2}-\d{2}/)) display = formatDate(val);
+          entries.push({ key, val: display });
+        }
+        if (!entries.length) return "";
+        return `
+          <div class="card p-4 space-y-2">
+            <div class="font-semibold flex items-center gap-2">
+              <i class="lucide lucide-file-text h-4 w-4 text-blue-500"></i> 详细数据
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              ${entries
+                .map(
+                  (e) => `
+                  <div class="border border-slate-100 rounded-lg p-2">
+                    <div class="text-xs text-slate-500">${LABELS[e.key] || e.key}</div>
+                    <div class="text-sm text-slate-800 break-all">${e.val}</div>
+                  </div>`,
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderData() {
+        if (!state.data) return;
+        const quota = state.data.quota_snapshots || {};
+        contentArea.innerHTML = `
+          ${state.data.account ? `<div class="mb-3 text-sm text-slate-600">当前账号：<span class="mono text-blue-600">${state.data.account}</span></div>` : ""}
+          ${renderQuotaCards(quota)}
+          <div class="mt-4">${renderDetails(state.data)}</div>
+        `;
         if (typeof lucide !== "undefined") lucide.createIcons();
       }
 
-      // Number Counter Animation
-      function animateValue(obj, start, end, duration) {
-        if (!obj) return;
-        let startTimestamp = null;
-        const step = (timestamp) => {
-          if (!startTimestamp) startTimestamp = timestamp;
-          const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-          // Ease out expo
-          const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-          const val = Math.floor(easeProgress * (end - start) + start);
-          obj.innerHTML = val.toLocaleString();
-          if (progress < 1) {
-            window.requestAnimationFrame(step);
-          }
-        };
-        window.requestAnimationFrame(step);
-      }
-
-      function getCircularProgress(percentage, colorClass, uniqueId) {
-        const radius = 34;
-        const circumference = radius * 2 * Math.PI;
-        // SVG renders backwards, so we calculate offset accordingly
-        const offset = circumference - (percentage / 100) * circumference;
-        
-        let strokeColor = "#3b82f6"; // blue
-        if (colorClass.includes("orange")) strokeColor = "#f97316";
-        if (colorClass.includes("red")) strokeColor = "#ef4444";
-        if (colorClass.includes("green")) strokeColor = "#10b981";
-
-        // We use a style to animate the stroke-dashoffset after render
-        setTimeout(() => {
-            const el = document.getElementById(`circle-${uniqueId}`);
-            if(el) el.style.strokeDashoffset = offset;
-        }, 100);
-
-        return `
-            <div class="relative flex items-center justify-center">
-                <svg class="circle-chart" viewBox="0 0 76 76">
-                    <circle class="circle-bg" cx="38" cy="38" r="${radius}" stroke="rgba(226, 232, 240, 0.5)"></circle>
-                    <circle id="circle-${uniqueId}" class="circle-progress" cx="38" cy="38" r="${radius}" 
-                        stroke-dasharray="${circumference}" 
-                        stroke-dashoffset="${circumference}"
-                        stroke="${strokeColor}"
-                    ></circle>
-                </svg>
-                <div class="absolute inset-0 flex items-center justify-center flex-col">
-                    <span class="text-xs font-bold text-slate-700">${percentage.toFixed(0)}%</span>
-                </div>
-            </div>
-        `;
-      }
-
-      /**
-       * Rendering Components
-       */
-
-      function renderAccountSelector() {
-        const count = state.accounts.length;
-        if (count === 0) {
-            accountSelectorContainer.innerHTML = '';
-            mobileSelectorContainer.innerHTML = '';
-            mobileSelectorContainer.classList.add('hidden');
-            return;
-        }
-
-        const options = state.accounts
-          .map((acc) =>`<option value="${acc.id}" ${state.accountId === acc.id ? "selected" : ""}>${acc.id} (${acc.accountType || '未知'})</option>`)
-          .join("");
-
-        const selectorHTML = `
-            <div class="relative group">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="lucide lucide-users h-4 w-4 text-blue-500"></i>
-                </div>
-                <select id="account-select-desktop" class="bg-white/80 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 block w-full pl-9 pr-8 py-2.5 appearance-none shadow-sm cursor-pointer hover:bg-white transition-colors font-medium">
-                    <option value="">自动 (Auto)</option>
-                    ${options}
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-                    <i class="lucide lucide-chevron-down h-3 w-3"></i>
-                </div>
-            </div>
-        `;
-        
-        // Desktop
-        accountSelectorContainer.innerHTML = selectorHTML;
-        const deskSelect = document.getElementById("account-select-desktop");
-        if(deskSelect) {
-            deskSelect.onchange = (e) => {
-                state.accountId = e.target.value;
-                fetchAll();
-            };
-        }
-
-        // Mobile
-        mobileSelectorContainer.classList.remove('hidden');
-        mobileSelectorContainer.innerHTML = selectorHTML.replace('account-select-desktop', 'account-select-mobile');
-        const mobSelect = document.getElementById("account-select-mobile");
-        if(mobSelect) {
-             mobSelect.onchange = (e) => {
-                state.accountId = e.target.value;
-                fetchAll();
-            };
-        }
-      }
-
-      function renderError(message) {
-        return `
-          <div class="glass-panel rounded-2xl p-10 text-center animate-slide-up border-red-100 bg-red-50/50">
-            <div class="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4 shadow-inner">
-              <i class="lucide lucide-cloud-off h-8 w-8 text-red-500"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-800">数据获取失败</h3>
-            <p class="mt-2 text-slate-500 max-w-md mx-auto">${message}</p>
-            <button onclick="fetchAll()" class="mt-6 px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all font-medium shadow-sm">
-                重试连接
-            </button>
-          </div>
-        `;
-      }
-
-      function renderSpinner() {
-        return `
-          <div class="flex flex-col items-center justify-center py-32 animate-fade-in">
-             <div class="relative">
-                <div class="h-16 w-16 rounded-full border-4 border-slate-200/50"></div>
-                <div class="absolute top-0 left-0 h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
-             </div>
-             <p class="mt-6 text-slate-500 font-medium tracking-wide animate-pulse">正在同步云端数据...</p>
-          </div>
-        `;
-      }
-
-      function renderQuotaCard(key, detail, index) {
-        const { entitlement, remaining, percent_remaining, unlimited } = detail;
-        const percentUsed = unlimited ? 0 : 100 - percent_remaining;
-        
-        let colorClass = "text-blue-600";
-        let statusText = "状态良好";
-        let statusBg = "bg-blue-50 text-blue-700";
-        
-        if (!unlimited) {
-            if (percentUsed > 75) {
-                colorClass = "text-orange-500";
-                statusText = "用量预警";
-                statusBg = "bg-orange-50 text-orange-700";
-            }
-            if (percentUsed > 90) {
-                colorClass = "text-red-600";
-                statusText = "即将耗尽";
-                statusBg = "bg-red-50 text-red-700";
-            }
-        } else {
-            colorClass = "text-green-500";
-            statusText = "无限畅享";
-            statusBg = "bg-green-50 text-green-700";
-        }
-
-        const title = t(key);
-        const uniqueId = key + Math.random().toString(36).substr(2, 9);
-        const delayClass = `stagger-${(index % 4) + 1}`;
-
-        // Icon Selection
-        let iconName = 'zap';
-        if (key.includes('chat')) iconName = 'message-square-text';
-        if (key.includes('completion')) iconName = 'code-2';
-
-        // Trigger counter animation after render
-        setTimeout(() => {
-            const el = document.getElementById(`count-${uniqueId}`);
-            if(el) animateValue(el, 0, unlimited ? 0 : remaining, 1500);
-        }, 100);
-
-        return `
-          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between animate-slide-up ${delayClass}">
-            <div class="flex justify-between items-start mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="p-3 rounded-xl bg-gradient-to-br from-white to-slate-100 shadow-sm border border-white/50">
-                        <i class="lucide lucide-${iconName} h-5 w-5 text-slate-600"></i>
-                    </div>
-                    <div>
-                        <div class="text-base font-bold text-slate-800">${title}</div>
-                        <div class="text-xs text-slate-500">配额监控</div>
-                    </div>
-                </div>
-                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-black/5 ${statusBg}">
-                    ${statusText}
-                </span>
-            </div>
-
-            <div class="flex items-end justify-between">
-                <div>
-                    <div class="flex items-baseline gap-1">
-                        <span id="count-${uniqueId}" class="text-3xl font-extrabold text-slate-800 tracking-tight">
-                            ${unlimited ? '∞' : '0'}
-                        </span>
-                        ${!unlimited ? `<span class="text-sm text-slate-400 font-medium">/ ${entitlement >= 1000 ? (entitlement/1000).toFixed(0)+'k' : entitlement}</span>` : ''}
-                    </div>
-                    <div class="text-xs text-slate-500 mt-1 font-medium">可用余额</div>
-                </div>
-                
-                <div class="scale-110">
-                    ${unlimited 
-                        ? `<div class="h-[80px] w-[80px] flex items-center justify-center"><i class="lucide lucide-infinity h-10 w-10 text-green-400"></i></div>` 
-                        : getCircularProgress(percentUsed, colorClass, uniqueId)
-                    }
-                </div>
-            </div>
-          </div>
-        `;
-      }
-
-      function formatValue(key, v) {
-        if (typeof v === "boolean") {
-            return v 
-                ? `<span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700"><i class="lucide lucide-check h-3 w-3"></i> ${t('true')}</span>`
-                : `<span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600"><i class="lucide lucide-x h-3 w-3"></i> ${t('false')}</span>`;
-        }
-        if (typeof v === "number") {
-             if (key.includes("percent")) return `<span class="font-mono text-blue-600">${v.toFixed(1)}%</span>`;
-             return `<span class="font-mono">${v.toLocaleString()}</span>`;
-        }
-        if (typeof v === "string") {
-            // Check for date
-            if (v.match(/^\d{4}-\d{2}-\d{2}/) || v.match(/\d{4}-\d{2}-\d{2}T/)) {
-                const d = new Date(v);
-                if (!Number.isNaN(d.getTime())) {
-                    return `<span class="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">${d.toLocaleString('zh-CN', {hour12: false})}</span>`;
-                }
-            }
-            if (v.startsWith("http")) return `<a href="${v}" target="_blank" class="text-blue-500 hover:underline truncate block max-w-[150px] text-xs">查看链接</a>`;
-            return v;
-        }
-        return String(v);
-      }
-
-      function flattenObject(obj, prefix = '') {
-        let result = {};
-        for (const [k, v] of Object.entries(obj)) {
-            if (k === 'quota_snapshots') continue; // Handled in cards
-            if (k === 'account') continue; // Handled in header
-            if (v && typeof v === 'object' && !Array.isArray(v)) {
-                const flat = flattenObject(v, prefix ? `${prefix}.${k}` : k);
-                result = { ...result, ...flat };
-            } else {
-                result[prefix ? `${prefix}.${k}` : k] = v;
-            }
-        }
-        return result;
-      }
-
-      function renderDetailsTable(data) {
-        const flatData = flattenObject(data);
-        const entries = Object.entries(flatData);
-        
-        if (entries.length === 0) return '';
-
-        const rows = entries.map(([k, v]) => {
-            const pureKey = k.split('.').pop();
-            const label = t(pureKey);
-            const value = Array.isArray(v) ? `[ ${v.length} 项 ]` : formatValue(pureKey, v);
-            
-            return `
-                <div class="flex flex-col p-4 bg-white/40 rounded-xl hover:bg-white/80 transition-colors border border-transparent hover:border-blue-100 group">
-                    <dt class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 group-hover:text-blue-500 transition-colors">${label}</dt>
-                    <dd class="text-sm text-slate-700 break-all font-medium">${value}</dd>
-                </div>
-            `;
-        }).join("");
-
-        return `
-            <div class="glass-panel rounded-2xl overflow-hidden animate-slide-up" style="animation-delay: 0.2s;">
-                <div class="px-6 py-4 border-b border-white/40 bg-white/30 flex items-center gap-2">
-                    <div class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
-                        <i class="lucide lucide-file-text h-4 w-4"></i>
-                    </div>
-                    <h3 class="font-bold text-slate-700">详细参数 (Metadata)</h3>
-                </div>
-                <div class="p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    ${rows}
-                </div>
-            </div>
-        `;
-      }
-
-      /**
-       * Core Logic (Unchanged)
-       */
       async function fetchAccounts() {
         try {
           const res = await fetch(ACCOUNT_URL);
           if (res.ok) {
             const json = await res.json();
             if (Array.isArray(json.accounts)) {
-              state.accounts = json.accounts.map(a => ({ id: a.id || "unknown", accountType: a.accountType }));
+              state.accounts = json.accounts.map((a) => ({ id: a.id || "unknown", accountType: a.accountType }));
             }
           }
           if (!state.accounts.length) {
@@ -628,21 +273,23 @@
             if (tRes.ok) {
               const json = await tRes.json();
               if (Array.isArray(json.tokens)) {
-                state.accounts = json.tokens.map(t => ({ id: t.id || "unknown", accountType: t.accountType }));
+                state.accounts = json.tokens.map((t) => ({ id: t.id || "unknown", accountType: t.accountType }));
               }
             }
           }
-          if (!state.accountId && state.accounts.length > 0) state.accountId = state.accounts[0].id;
-        } catch (e) { console.warn("账户获取失败", e); }
+          if (!state.accountId && state.accounts.length) state.accountId = state.accounts[0].id;
+        } catch (e) {
+          console.warn("账户获取失败", e);
+        }
       }
 
-      async function addAccount(githubToken, accountType) {
+      async function addAccount(token, accountType) {
         const res = await fetch(ACCOUNT_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ githubToken, accountType }),
+          body: JSON.stringify({ githubToken: token, accountType }),
         });
-        if (!res.ok) throw new Error(`Status ${res.status}`);
+        if (!res.ok) throw new Error(`添加失败：${res.status}`);
         return res.json();
       }
 
@@ -650,151 +297,64 @@
         const headers = {};
         if (state.accountId) headers["X-Account-Id"] = state.accountId;
         const res = await fetch(USAGE_URL, { headers });
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       }
 
       async function fetchAll() {
         state.isLoading = true;
         state.error = null;
-        render(); 
+        renderLoading();
         try {
           await fetchAccounts();
-          renderAccountSelector();
-          const data = await fetchUsage();
-          state.data = data;
-        } catch (err) {
-          state.error = err.message || "请求失败";
-          state.data = null;
-        } finally {
+          renderSelector();
+          state.data = await fetchUsage();
           state.isLoading = false;
-          render();
+          renderData();
+        } catch (err) {
+          state.isLoading = false;
+          state.error = err.message || "请求失败";
+          renderError(state.error);
         }
       }
 
-      function render() {
-        if (state.isLoading) {
-          contentArea.innerHTML = renderSpinner();
-          createIcons();
-          return;
-        }
-        if (state.error) {
-          contentArea.innerHTML = renderError(state.error);
-          createIcons();
-          return;
-        }
-        if (state.data) {
-          let cardsHtml = '';
-          if (state.data.quota_snapshots) {
-            cardsHtml = `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
-                    ${Object.entries(state.data.quota_snapshots)
-                        .map(([key, value], idx) => renderQuotaCard(key, value, idx))
-                        .join("")}
-                </div>
-            `;
-          } else {
-             cardsHtml = `<div class="p-8 text-center glass-panel rounded-2xl mb-6 text-slate-500">无配额快照数据</div>`;
-          }
-
-          contentArea.innerHTML = `
-            ${state.data.account ? 
-                `<div class="flex items-center gap-3 mb-6 animate-scale-in">
-                    <div class="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shadow-lg shadow-blue-300">
-                        <i class="lucide lucide-user h-5 w-5"></i>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500 font-bold uppercase tracking-wide">当前活跃账号</div>
-                        <div class="text-lg font-mono font-bold text-slate-800">${state.data.account}</div>
-                    </div>
-                 </div>` : ''}
-            
-            ${cardsHtml}
-            ${renderDetailsTable(state.data)}
-          `;
-          createIcons();
-          return;
-        }
-        
-        // Empty State
-        contentArea.innerHTML = `
-          <div class="glass-panel rounded-2xl p-16 text-center animate-slide-up">
-             <div class="mx-auto h-24 w-24 bg-gradient-to-tr from-blue-100 to-white rounded-full flex items-center justify-center mb-6 shadow-sm">
-                 <i class="lucide lucide-bar-chart-2 h-10 w-10 text-blue-400"></i>
-             </div>
-             <h3 class="text-xl font-bold text-slate-900">准备就绪</h3>
-             <p class="text-slate-500 mt-2">点击上方“刷新”按钮获取最新 Copilot 用量数据</p>
-          </div>
-        `;
-        createIcons();
+      function openModal() {
+        modal.classList.remove("hidden");
       }
-
-      /**
-       * Modal Logic
-       */
-      function toggleModal(show) {
-        if (show) {
-            modal.classList.remove("hidden");
-            setTimeout(() => {
-                modalBackdrop.classList.remove("opacity-0");
-                modalPanel.classList.remove("opacity-0", "scale-95");
-                modalPanel.classList.add("opacity-100", "scale-100");
-            }, 10);
-        } else {
-            modalBackdrop.classList.add("opacity-0");
-            modalPanel.classList.add("opacity-0", "scale-95");
-            modalPanel.classList.remove("opacity-100", "scale-100");
-            setTimeout(() => {
-                modal.classList.add("hidden");
-                modalError.classList.add("hidden");
-                document.getElementById("token-input").value = "";
-            }, 300);
-        }
+      function closeModal() {
+        modal.classList.add("hidden");
+        modalError.classList.add("hidden");
+        document.getElementById("token-input").value = "";
       }
 
       function initModal() {
-        const close = () => toggleModal(false);
-        document.getElementById("modal-cancel").onclick = close;
-        document.getElementById("modal-close-icon").onclick = close;
-        addAccountBtn.onclick = () => toggleModal(true);
-        modal.onclick = (e) => { if (e.target === modal || e.target.parentElement === modal) close(); };
-
+        document.getElementById("modal-close").onclick = closeModal;
+        document.getElementById("modal-cancel").onclick = closeModal;
+        modal.onclick = (e) => {
+          if (e.target === modal || e.target.classList.contains("bg-slate-900/60")) closeModal();
+        };
         document.getElementById("modal-submit").onclick = async () => {
-          const tokenInput = document.getElementById("token-input");
-          const typeInput = document.getElementById("account-type");
-          const btn = document.getElementById("modal-submit");
-          
-          const token = tokenInput.value.trim();
-          const type = typeInput.value;
-          
-          modalError.classList.add("hidden");
-          
+          const token = document.getElementById("token-input").value.trim();
+          const type = document.getElementById("account-type").value;
           if (!token) {
-            modalErrorText.textContent = "Token 不能为空";
+            modalError.textContent = "Token 不能为空";
             modalError.classList.remove("hidden");
             return;
           }
-
-          const originalText = btn.innerHTML;
-          btn.innerHTML = `<i class="lucide lucide-loader-2 h-4 w-4 animate-spin"></i> 处理中...`;
-          btn.disabled = true;
-
+          modalError.classList.add("hidden");
           try {
             await addAccount(token, type);
-            toggleModal(false);
+            closeModal();
             await fetchAll();
           } catch (err) {
-            modalErrorText.textContent = err.message || "添加失败，请检查 Token";
+            modalError.textContent = err.message || "添加失败";
             modalError.classList.remove("hidden");
-          } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
           }
         };
       }
 
-      // Start
       refreshBtn.onclick = fetchAll;
+      addAccountBtn.onclick = openModal;
       endpointLabel.textContent = USAGE_URL;
       initModal();
       fetchAll();
