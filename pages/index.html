@@ -225,15 +225,23 @@
                 const total = detail.entitlement ?? 0;
                 const remaining = detail.quota_remaining ?? detail.remaining ?? 0;
                 const unlimited = detail.unlimited === true || total === 0;
+                const used =
+                  total > 0 && remaining >= 0 ? total - remaining : 0;
+                const usageCount =
+                  detail.overage_count
+                    ?? (used > 0 ? used : 0);
                 const percentRemaining = detail.percent_remaining ?? (total > 0 ? (remaining / total) * 100 : 100);
                 const percentUsed = unlimited ? 0 : 100 - percentRemaining;
+                const quotaLine = unlimited
+                  ? `<div class="text-sm text-slate-500">调用次数：${usageCount.toLocaleString?.() ?? usageCount}</div>`
+                  : `<div class="text-sm text-slate-500">总配额：${total}</div>`;
                 return `
                   <div class="card p-4 space-y-2">
                     <div class="flex justify-between items-center">
                       <div class="font-semibold">${LABELS[key] || key}</div>
                       <span class="pill">${unlimited ? "无限" : `${percentUsed.toFixed(1)}% 已用`}</span>
                     </div>
-                    <div class="text-sm text-slate-500">总配额：${unlimited ? "∞" : total}</div>
+                    ${quotaLine}
                     <div class="text-sm text-slate-500">剩余：${unlimited ? "∞" : remaining}</div>
                     <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div class="h-2 bg-gradient-to-r from-blue-500 to-indigo-500" style="width:${unlimited ? 100 : percentUsed}%"></div>
