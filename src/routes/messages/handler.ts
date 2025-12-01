@@ -4,6 +4,7 @@ import consola from "consola"
 import { streamSSE } from "hono/streaming"
 
 import { pickAccountForConversation } from "~/lib/accounts"
+import { findApiKey, readApiKeyFromHeaders } from "~/lib/api-keys"
 import { awaitApproval } from "~/lib/approval"
 import { checkRateLimit } from "~/lib/rate-limit"
 import { state } from "~/lib/state"
@@ -24,9 +25,17 @@ import {
 import { translateChunkToAnthropicEvents } from "./stream-translation"
 
 export async function handleCompletion(c: Context) {
+  const rawApiKey = readApiKeyFromHeaders(c.req.raw.headers)
+  const apiKey = await findApiKey(rawApiKey)
+  if (rawApiKey && !apiKey) {
+    return c.json({ error: "API Key 无效" }, 401)
+  }
+
   const anthropicPayload = await c.req.json<AnthropicMessagesPayload>()
   const conversationId =
-    c.req.header("x-conversation-id") ?? anthropicPayload.metadata?.user_id
+    c.req.header("x-conversation-id")
+    ?? anthropicPayload.metadata?.user_id
+    ?? apiKey?.key
 
   const account = await pickAccountForConversation(conversationId)
   await checkRateLimit(state, account.id)

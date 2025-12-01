@@ -12,9 +12,16 @@ export interface Account {
   refreshHandle?: ReturnType<typeof setInterval>
 }
 
+export interface ApiKey {
+  key: string
+  label?: string
+  createdAt: number
+}
+
 export interface State {
   accounts: Array<Account>
   conversationAccounts: Map<string, string>
+  apiKeys: Map<string, ApiKey>
 
   vsCodeVersion?: string
 
@@ -31,6 +38,7 @@ export interface State {
 export const state: State = {
   accounts: [],
   conversationAccounts: new Map(),
+  apiKeys: new Map(),
   manualApprove: false,
   rateLimitWait: false,
   showToken: false,

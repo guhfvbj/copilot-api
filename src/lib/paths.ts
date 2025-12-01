@@ -6,17 +6,21 @@ const APP_DIR = path.join(os.homedir(), ".local", "share", "copilot-api")
 
 const GITHUB_TOKEN_PATH = path.join(APP_DIR, "github_token")
 const ACCOUNTS_PATH = path.join(APP_DIR, "accounts.json")
+const API_KEYS_PATH = path.join(APP_DIR, "api_keys.json")
 
 export const PATHS = {
   APP_DIR,
   GITHUB_TOKEN_PATH,
   ACCOUNTS_PATH,
+  API_KEYS_PATH,
 }
 
 export async function ensurePaths(): Promise<void> {
   await fs.mkdir(PATHS.APP_DIR, { recursive: true })
   await ensureFile(PATHS.GITHUB_TOKEN_PATH)
   await ensureFile(PATHS.ACCOUNTS_PATH, "[]")
+  // 为 API Key 预留存储文件
+  await ensureFile(PATHS.API_KEYS_PATH, "[]")
 }
 
 async function ensureFile(filePath: string, initialContent?: string): Promise<void> {

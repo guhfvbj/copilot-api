@@ -60,11 +60,35 @@
     <div class="md:hidden mx-auto max-w-6xl px-4 mt-3" id="mobile-selector-container"></div>
 
     <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
-      <div class="card p-4 flex items-center gap-3">
-        <i class="lucide lucide-server h-5 w-5 text-blue-600"></i>
-        <div>
-          <div class="text-xs text-slate-500 uppercase">请求地址</div>
-          <div id="current-endpoint" class="mono text-sm text-slate-800 truncate"></div>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="card p-4 flex items-center gap-3">
+          <i class="lucide lucide-server h-5 w-5 text-blue-600"></i>
+          <div>
+            <div class="text-xs text-slate-500 uppercase">请求地址</div>
+            <div id="current-endpoint" class="mono text-sm text-slate-800 truncate"></div>
+          </div>
+        </div>
+
+        <div class="card p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-xs text-slate-500 uppercase">统一 API Key</div>
+              <div class="text-sm text-slate-700">用于多账号粘滞轮询调用</div>
+            </div>
+            <div class="flex gap-2">
+              <button id="generate-key-btn" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm">生成</button>
+              <button id="copy-key-btn" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">复制</button>
+            </div>
+          </div>
+          <div class="border border-dashed border-slate-200 rounded-lg p-3 bg-slate-50">
+            <div class="text-xs text-slate-500 mb-1">当前 Key</div>
+            <div id="api-key-value" class="mono break-all text-sm text-slate-800">暂无</div>
+          </div>
+          <div id="api-key-status" class="text-xs text-slate-500"></div>
+          <div class="text-xs text-slate-500">
+            说明：客户端使用 <span class="mono">Authorization: Bearer &lt;key&gt;</span> 或 <span class="mono">X-API-Key</span>。
+            未提供 <span class="mono">X-Conversation-Id</span> 时默认按 Key 粘滞到同一账号，新的对话 ID 会切换到下一个账号。
+          </div>
         </div>
       </div>
 
@@ -112,8 +136,9 @@
       const USAGE_URL = `${BASE}/usage`;
       const TOKEN_URL = `${BASE}/token`;
       const ACCOUNT_URL = `${BASE}/accounts`;
+      const API_KEY_URL = `${BASE}/api-keys`;
 
-      const state = { isLoading: false, error: null, data: null, accounts: [], accountId: "" };
+      const state = { isLoading: false, error: null, data: null, accounts: [], accountId: "", apiKey: "" };
 
       const contentArea = document.getElementById("content-area");
       const refreshBtn = document.getElementById("refresh-btn");
@@ -121,6 +146,10 @@
       const endpointLabel = document.getElementById("current-endpoint");
       const accountSelectorContainer = document.getElementById("account-selector-container");
       const mobileSelectorContainer = document.getElementById("mobile-selector-container");
+      const apiKeyValueEl = document.getElementById("api-key-value");
+      const apiKeyStatusEl = document.getElementById("api-key-status");
+      const generateKeyBtn = document.getElementById("generate-key-btn");
+      const copyKeyBtn = document.getElementById("copy-key-btn");
 
       const modal = document.getElementById("add-modal");
       const modalError = document.getElementById("modal-error");
@@ -259,6 +288,67 @@
         if (typeof lucide !== "undefined") lucide.createIcons();
       }
 
+      function renderApiKey() {
+        if (!apiKeyValueEl) return;
+        if (!apiKeyStatusEl) return;
+        if (state.apiKey) {
+          apiKeyValueEl.textContent = state.apiKey;
+          apiKeyStatusEl.textContent = "已加载，可直接复制或使用";
+          if (copyKeyBtn) copyKeyBtn.disabled = false;
+        } else {
+          apiKeyValueEl.textContent = "暂无";
+          apiKeyStatusEl.textContent = "点击生成将为账号池创建统一 API Key";
+          if (copyKeyBtn) copyKeyBtn.disabled = true;
+        }
+      }
+
+      async function fetchApiKeys() {
+        try {
+          const res = await fetch(API_KEY_URL);
+          if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.apiKeys)) {
+              const sorted = [...json.apiKeys].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+              if (sorted.length) state.apiKey = sorted[0].key;
+            }
+          }
+        } catch (e) {
+          console.warn("获取 API Key 失败", e);
+        }
+        renderApiKey();
+      }
+
+      async function generateApiKey() {
+        try {
+          if (apiKeyStatusEl) apiKeyStatusEl.textContent = "生成中...";
+          if (generateKeyBtn) generateKeyBtn.disabled = true;
+          const res = await fetch(API_KEY_URL, { method: "POST" });
+          if (!res.ok) throw new Error(`生成失败：HTTP ${res.status}`);
+          const json = await res.json();
+          state.apiKey = json?.apiKey?.key || "";
+          renderApiKey();
+          await copyApiKey();
+          if (apiKeyStatusEl) apiKeyStatusEl.textContent = "已生成并复制到剪贴板";
+        } catch (e) {
+          if (apiKeyStatusEl) apiKeyStatusEl.textContent = e.message || "生成失败";
+        } finally {
+          if (generateKeyBtn) generateKeyBtn.disabled = false;
+        }
+      }
+
+      async function copyApiKey() {
+        if (!state.apiKey) {
+          if (apiKeyStatusEl) apiKeyStatusEl.textContent = "暂无可复制的 Key";
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(state.apiKey);
+          if (apiKeyStatusEl) apiKeyStatusEl.textContent = "已复制";
+        } catch (e) {
+          if (apiKeyStatusEl) apiKeyStatusEl.textContent = "复制失败，请手动选择文本";
+        }
+      }
+
       async function fetchAccounts() {
         try {
           const res = await fetch(ACCOUNT_URL);
@@ -353,11 +443,16 @@
         };
       }
 
-      refreshBtn.onclick = fetchAll;
+      refreshBtn.onclick = () => {
+        fetchApiKeys();
+        fetchAll();
+      };
       addAccountBtn.onclick = openModal;
+      if (generateKeyBtn) generateKeyBtn.onclick = generateApiKey;
+      if (copyKeyBtn) copyKeyBtn.onclick = copyApiKey;
       endpointLabel.textContent = USAGE_URL;
       initModal();
-      fetchAll();
+      fetchApiKeys().then(fetchAll);
     </script>
   </body>
 </html>

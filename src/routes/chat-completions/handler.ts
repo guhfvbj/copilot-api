@@ -4,6 +4,7 @@ import consola from "consola"
 import { streamSSE, type SSEMessage } from "hono/streaming"
 
 import { pickAccountForConversation } from "~/lib/accounts"
+import { findApiKey, readApiKeyFromHeaders } from "~/lib/api-keys"
 import { awaitApproval } from "~/lib/approval"
 import { checkRateLimit } from "~/lib/rate-limit"
 import { state } from "~/lib/state"
@@ -16,8 +17,15 @@ import {
 } from "~/services/copilot/create-chat-completions"
 
 export async function handleCompletion(c: Context) {
+  const rawApiKey = readApiKeyFromHeaders(c.req.raw.headers)
+  const apiKey = await findApiKey(rawApiKey)
+  if (rawApiKey && !apiKey) {
+    return c.json({ error: "API Key 无效" }, 401)
+  }
+
   let payload = await c.req.json<ChatCompletionsPayload>()
-  const conversationId = c.req.header("x-conversation-id") ?? payload.user
+  const conversationId =
+    c.req.header("x-conversation-id") ?? payload.user ?? apiKey?.key
 
   const account = await pickAccountForConversation(conversationId)
   await checkRateLimit(state, account.id)

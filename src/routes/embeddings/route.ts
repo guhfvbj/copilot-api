@@ -2,6 +2,7 @@ import { Hono } from "hono"
 
 import { forwardError } from "~/lib/error"
 import { pickAccountForConversation } from "~/lib/accounts"
+import { findApiKey, readApiKeyFromHeaders } from "~/lib/api-keys"
 import { state } from "~/lib/state"
 import {
   createEmbeddings,
@@ -12,7 +13,15 @@ export const embeddingRoutes = new Hono()
 
 embeddingRoutes.post("/", async (c) => {
   try {
-    const conversationId = c.req.header("x-conversation-id")
+    const rawApiKey = readApiKeyFromHeaders(c.req.raw.headers)
+    const apiKey = await findApiKey(rawApiKey)
+    if (rawApiKey && !apiKey) {
+      return c.json({ error: "API Key 无效" }, 401)
+    }
+
+    const conversationId =
+      c.req.header("x-conversation-id")
+      ?? apiKey?.key
     const payload = await c.req.json<EmbeddingRequest>()
     const account = await pickAccountForConversation(conversationId)
     const response = await createEmbeddings(
