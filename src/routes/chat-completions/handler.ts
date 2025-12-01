@@ -5,6 +5,7 @@ import { streamSSE, type SSEMessage } from "hono/streaming"
 
 import { pickAccountForConversation } from "~/lib/accounts"
 import { findApiKey, readApiKeyFromHeaders } from "~/lib/api-keys"
+import { deriveConversationId } from "~/lib/conversation"
 import { awaitApproval } from "~/lib/approval"
 import { checkRateLimit } from "~/lib/rate-limit"
 import { state } from "~/lib/state"
@@ -24,8 +25,13 @@ export async function handleCompletion(c: Context) {
   }
 
   let payload = await c.req.json<ChatCompletionsPayload>()
-  const conversationId =
-    c.req.header("x-conversation-id") ?? payload.user ?? apiKey?.key
+  const conversationId = deriveConversationId({
+    explicitId: c.req.header("x-conversation-id"),
+    userId: payload.user,
+    apiKey: apiKey?.key,
+    headers: c.req.raw.headers,
+    messages: payload.messages,
+  })
   const requestedAccountId = c.req.header("x-account-id")
 
   const account = await pickAccountForConversation(

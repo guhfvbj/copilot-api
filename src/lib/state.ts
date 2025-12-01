@@ -22,6 +22,7 @@ export interface State {
   accounts: Array<Account>
   conversationAccounts: Map<string, string>
   apiKeys: Map<string, ApiKey>
+  accountRotationIndex: number
 
   vsCodeVersion?: string
 
@@ -39,6 +40,7 @@ export const state: State = {
   accounts: [],
   conversationAccounts: new Map(),
   apiKeys: new Map(),
+  accountRotationIndex: -1,
   manualApprove: false,
   rateLimitWait: false,
   showToken: false,

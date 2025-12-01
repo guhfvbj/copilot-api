@@ -5,6 +5,7 @@ import { streamSSE } from "hono/streaming"
 
 import { pickAccountForConversation } from "~/lib/accounts"
 import { findApiKey, readApiKeyFromHeaders } from "~/lib/api-keys"
+import { deriveConversationId } from "~/lib/conversation"
 import { awaitApproval } from "~/lib/approval"
 import { checkRateLimit } from "~/lib/rate-limit"
 import { state } from "~/lib/state"
@@ -32,10 +33,13 @@ export async function handleCompletion(c: Context) {
   }
 
   const anthropicPayload = await c.req.json<AnthropicMessagesPayload>()
-  const conversationId =
-    c.req.header("x-conversation-id")
-    ?? anthropicPayload.metadata?.user_id
-    ?? apiKey?.key
+  const conversationId = deriveConversationId({
+    explicitId: c.req.header("x-conversation-id"),
+    userId: anthropicPayload.metadata?.user_id ?? null,
+    apiKey: apiKey?.key,
+    headers: c.req.raw.headers,
+    messages: anthropicPayload.messages,
+  })
   const requestedAccountId = c.req.header("x-account-id")
 
   const account = await pickAccountForConversation(

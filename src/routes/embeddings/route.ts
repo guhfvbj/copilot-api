@@ -3,6 +3,7 @@ import { Hono } from "hono"
 import { forwardError } from "~/lib/error"
 import { pickAccountForConversation } from "~/lib/accounts"
 import { findApiKey, readApiKeyFromHeaders } from "~/lib/api-keys"
+import { deriveConversationId } from "~/lib/conversation"
 import { state } from "~/lib/state"
 import {
   createEmbeddings,
@@ -19,11 +20,17 @@ embeddingRoutes.post("/", async (c) => {
       return c.json({ error: "API Key 无效" }, 401)
     }
 
-    const conversationId =
-      c.req.header("x-conversation-id")
-      ?? apiKey?.key
-    const requestedAccountId = c.req.header("x-account-id")
     const payload = await c.req.json<EmbeddingRequest>()
+    const conversationId = deriveConversationId({
+      explicitId: c.req.header("x-conversation-id"),
+      apiKey: apiKey?.key,
+      headers: c.req.raw.headers,
+      fallbackText:
+        typeof payload.input === "string"
+          ? payload.input
+          : JSON.stringify(payload.input),
+    })
+    const requestedAccountId = c.req.header("x-account-id")
     const account = await pickAccountForConversation(
       conversationId,
       requestedAccountId,

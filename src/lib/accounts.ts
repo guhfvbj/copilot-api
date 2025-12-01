@@ -30,6 +30,7 @@ export async function loadAccountsFromDisk(): Promise<void> {
     const raw = await fs.readFile(PATHS.ACCOUNTS_PATH, "utf8")
     if (!raw.trim()) {
       state.accounts = []
+      state.accountRotationIndex = -1
       return
     }
     const parsed = JSON.parse(raw) as Array<StoredAccount>
@@ -37,9 +38,14 @@ export async function loadAccountsFromDisk(): Promise<void> {
       ...acc,
       accountType: acc.accountType || "individual",
     }))
+    state.accountRotationIndex = Math.min(
+      state.accountRotationIndex ?? -1,
+      state.accounts.length - 1,
+    )
   } catch (error) {
     consola.warn("Failed to load accounts, starting empty:", error)
     state.accounts = []
+    state.accountRotationIndex = -1
   }
 }
 
@@ -58,9 +64,13 @@ export async function persistAccounts(): Promise<void> {
   await fs.writeFile(PATHS.ACCOUNTS_PATH, payload)
 }
 
-function getRandomAccount(): Account {
-  const index = Math.floor(Math.random() * state.accounts.length)
-  return state.accounts[index]!
+function getNextAccountRoundRobin(): Account {
+  if (state.accountRotationIndex >= state.accounts.length - 1) {
+    state.accountRotationIndex = 0
+  } else {
+    state.accountRotationIndex += 1
+  }
+  return state.accounts[state.accountRotationIndex]!
 }
 
 export function setConversationAccount(
@@ -121,33 +131,6 @@ async function hydrateCopilotToken(account: Account) {
       consola.error(`[${account.id}] Failed to refresh Copilot token:`, error)
     }
   }, refreshInterval)
-}
-
-export async function pickAccountForConversation(
-  conversationId: string | undefined,
-): Promise<Account> {
-  if (state.accounts.length === 0) {
-    throw new Error("No accounts available. Please add an account first.")
-  }
-
-  let account: Account | undefined
-
-  if (conversationId) {
-    const accountId = state.conversationAccounts.get(conversationId)
-    if (accountId) {
-      account = state.accounts.find((a) => a.id === accountId)
-    }
-  }
-
-  if (!account) {
-    account = getRandomAccount()
-    if (conversationId) {
-      setConversationAccount(conversationId, account.id)
-    }
-  }
-
-  await ensureAccountReady(account)
-  return account
 }
 
 async function upsertAccount(account: Account) {
@@ -258,9 +241,7 @@ export async function pickAccountForConversation(
   requestedAccountId?: string,
   requestedModelId?: string,
 ): Promise<Account> {
-  if (state.accounts.length === 0) {
-    await ensureAccountsLoadedFromDisk()
-  }
+  if (state.accounts.length === 0) await ensureAccountsLoadedFromDisk()
   if (state.accounts.length === 0) {
     throw new Error("No accounts available. Please add an account first.")
   }
@@ -276,35 +257,34 @@ export async function pickAccountForConversation(
     if (pinned) account = state.accounts.find((a) => a.id === pinned)
   }
 
-  const ensureReady = async (acc: Account) => {
-    await ensureAccountReady(acc)
-    return acc
-  }
-
   const supportsModel = (acc: Account) => {
     if (!requestedModelId) return true
     return acc.models?.data.some((m) => m.id === requestedModelId) ?? false
   }
 
   if (account) {
-    await ensureReady(account)
+    await ensureAccountReady(account)
     if (supportsModel(account)) {
       if (conversationId) setConversationAccount(conversationId, account.id)
       return account
     }
   }
 
+  // 预热模型列表，后续选择才有依据
   for (const acc of state.accounts) {
-    await ensureReady(acc)
+    await ensureAccountReady(acc)
   }
 
-  const candidates = state.accounts.filter(supportsModel)
-  account = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : getRandomAccount()
-
-  if (conversationId) {
-    setConversationAccount(conversationId, account.id)
+  // 轮询选择下一个账号（可按模型过滤）
+  for (let i = 0; i < state.accounts.length; i++) {
+    const candidate = getNextAccountRoundRobin()
+    if (!supportsModel(candidate)) continue
+    if (conversationId) setConversationAccount(conversationId, candidate.id)
+    return candidate
   }
 
-  await ensureAccountReady(account)
-  return account
+  // 兜底：如果全部不符合模型要求，返回第一个账号
+  const fallback = state.accounts[0]
+  if (conversationId) setConversationAccount(conversationId, fallback.id)
+  return fallback
 }
