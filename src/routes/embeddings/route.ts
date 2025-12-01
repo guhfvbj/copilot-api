@@ -27,6 +27,7 @@ embeddingRoutes.post("/", async (c) => {
     const account = await pickAccountForConversation(
       conversationId,
       requestedAccountId,
+      payload.model,
     )
     const response = await createEmbeddings(
       account,

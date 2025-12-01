@@ -256,6 +256,7 @@ export async function ensureAccountsInitialized(
 export async function pickAccountForConversation(
   conversationId: string | undefined,
   requestedAccountId?: string,
+  requestedModelId?: string,
 ): Promise<Account> {
   if (state.accounts.length === 0) {
     await ensureAccountsLoadedFromDisk()
@@ -275,9 +276,30 @@ export async function pickAccountForConversation(
     if (pinned) account = state.accounts.find((a) => a.id === pinned)
   }
 
-  if (!account) {
-    account = getRandomAccount()
+  const ensureReady = async (acc: Account) => {
+    await ensureAccountReady(acc)
+    return acc
   }
+
+  const supportsModel = (acc: Account) => {
+    if (!requestedModelId) return true
+    return acc.models?.data.some((m) => m.id === requestedModelId) ?? false
+  }
+
+  if (account) {
+    await ensureReady(account)
+    if (supportsModel(account)) {
+      if (conversationId) setConversationAccount(conversationId, account.id)
+      return account
+    }
+  }
+
+  for (const acc of state.accounts) {
+    await ensureReady(acc)
+  }
+
+  const candidates = state.accounts.filter(supportsModel)
+  account = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : getRandomAccount()
 
   if (conversationId) {
     setConversationAccount(conversationId, account.id)

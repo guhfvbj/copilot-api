@@ -31,6 +31,7 @@ export async function handleCompletion(c: Context) {
   const account = await pickAccountForConversation(
     conversationId,
     requestedAccountId,
+    payload.model,
   )
   await checkRateLimit(state, account.id)
   consola.debug("Request payload:", JSON.stringify(payload).slice(-400))
