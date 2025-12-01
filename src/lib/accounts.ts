@@ -44,7 +44,7 @@ export async function loadAccountsFromDisk(): Promise<void> {
       accountType: acc.accountType || "individual",
     }))
     state.accountRotationIndex = Math.min(
-      state.accountRotationIndex ?? -1,
+  // ????????????????????????????
       state.accounts.length - 1,
     )
   } catch (error) {
@@ -95,15 +95,15 @@ async function getAccountUsage(
 
 const hasPremiumBalance = (usage: CopilotUsageResponse | undefined) => {
   if (!usage) return false
-  const premium = (usage.quota_snapshots?.premium_interactions ?? null) as
+  // ????????????????????????????
     | QuotaDetail
     | null
   if (!premium) return false
   if (premium.unlimited) return true
   const remaining =
     premium.remaining
-    ?? premium.quota_remaining
-    ?? 0
+  // ????????????????????????????
+  // ????????????????????????????
   return remaining > 0
 }
 
@@ -273,16 +273,11 @@ export async function ensureAccountsInitialized(
 export async function pickAccountForConversation(
   _conversationId: string | undefined,
   requestedAccountId?: string,
-  requestedModelId?: string,
+  _requestedModelId?: string,
 ): Promise<Account> {
   if (state.accounts.length === 0) await ensureAccountsLoadedFromDisk()
   if (state.accounts.length === 0) {
     throw new Error("No accounts available. Please add an account first.")
-  }
-
-  const supportsModel = (acc: Account) => {
-    if (!requestedModelId) return true
-    return acc.models?.data.some((m) => m.id === requestedModelId) ?? false
   }
 
   const hasBalance = async (acc: Account) => {
@@ -294,7 +289,7 @@ export async function pickAccountForConversation(
   // 优先使用显式指定账号（且有余额）
   if (requestedAccountId) {
     const target = state.accounts.find((a) => a.id === requestedAccountId)
-    if (target && supportsModel(target) && (await hasBalance(target))) {
+    if (target && (await hasBalance(target))) {
       return target
     }
   }
@@ -302,14 +297,13 @@ export async function pickAccountForConversation(
   // 轮询查找有余额的账号
   for (let i = 0; i < state.accounts.length; i++) {
     const candidate = getNextAccountRoundRobin()
-    if (!supportsModel(candidate)) continue
     if (await hasBalance(candidate)) {
       return candidate
     }
   }
 
-  // 兜底：全部耗尽时，返回支持模型的第一个账号（可能触发上游限额错误）
-  const fallback = state.accounts.find((a) => supportsModel(a)) ?? state.accounts[0]
+  // 兜底：全部耗尽时，返回第一个账号（可能触发上游限额错误）
+  const fallback = state.accounts[0]
   await ensureAccountReady(fallback)
   return fallback
 }
